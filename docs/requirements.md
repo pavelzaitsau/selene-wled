@@ -87,8 +87,8 @@ These requirements bind every desktop client, on every OS. The wire format and t
 | # | Question | Why it blocks | Owner | Needed by |
 | --- | --- | --- | --- | --- |
 | 1 | Is 5% of one core the right budget in R7? | Sets the capture rate and resolution | Pavel | Before work on the first client starts |
-| 2 | Do gamma 1.5 and smoothing 0.30 match the picture? | They are a first guess, see [protocol.md](protocol.md#sampling) | Pavel | Before the switch from HyperHDR |
+| 2 | Do gamma 1.5 and a smoothing time of 0.0935 s look right? | They are a first guess, see [protocol.md](protocol.md#sampling) | Pavel | Before the macOS client leaves the prototype stage |
 | 3 | What does the strip do on the lock screen and while the computer sleeps? | R3 and R4 cover the monitor only | Pavel | Before work on the first client starts |
-| 4 | Is black-border detection worth adding for letterboxed video? | R1 excludes it today | Pavel | After the switch from HyperHDR |
+| 4 | Is black-border detection worth adding for letterboxed video? | R1 excludes it today | Pavel | Before the macOS client leaves the prototype stage |
 | 5 | Does the Windows display name contain `LG ULTRAFINE`, as R2 expects? | Pavel checked R2 on macOS only | Pavel | Before work on the Windows client starts |
 | 6 | What breaks when USB is connected while the 5 V supply is on? | [hardware.md](hardware.md#wiring) states the rule without its consequence | Pavel | Before the next reflash |

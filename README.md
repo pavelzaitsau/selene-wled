@@ -6,8 +6,9 @@ A desktop client captures the screen and streams one colour per LED over UDP. An
 [WLED](https://kno.wled.ge) drives the strip. When the monitor is off or unplugged, the strip goes
 dark.
 
-The project is at the requirements stage. HyperHDR drives the strip today, and
-[docs/migration.md](docs/migration.md) describes the switch.
+The project is at the requirements stage. Since 2026-09-29 the macOS prototype on branch
+`feat/macos-client` drives the strip. It replaced HyperHDR, see
+[ADR-0001](docs/adr/0001-replace-hyperhdr.md).
 
 ## Components
 
@@ -23,7 +24,6 @@ The project is at the requirements stage. HyperHDR drives the strip today, and
 | --- | --- |
 | `docs/` | Facts shared by every component: requirements, hardware, protocol, decisions |
 | `tools/` | The test pattern, the documentation gate, the git hooks, the skill refresh |
-| `legacy/` | The HyperHDR watcher that runs today; deleted after the switch |
 | `.claude/skills/` | The writing rules for documentation, commits and branch names |
 
 ## Documentation

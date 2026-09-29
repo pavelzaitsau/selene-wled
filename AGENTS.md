@@ -25,7 +25,6 @@ A strip that glows one flat colour shows WLED's own state, not the stream.
 | Parts, wiring, LED order | [docs/hardware.md](docs/hardware.md) |
 | Board settings, address, port, Keychain accounts | [firmware/esp32/README.md](firmware/esp32/README.md) |
 | Constraints of one OS | That client's README |
-| What runs on the Mac today, the switch | [docs/migration.md](docs/migration.md) |
 | A decision with rejected alternatives | A new file in [docs/adr/](docs/adr/) |
 
 Change a fact in its owner and link to it everywhere else. A copy drifts.

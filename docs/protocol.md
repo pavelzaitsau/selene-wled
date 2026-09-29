@@ -24,7 +24,7 @@ previous frame. At 30 fps that is 0.30 per frame, and at 15 fps 0.51. A factor t
 the look of the smoothing when a client changes its frame rate.
 
 At 15 fps the macOS client costs half the CPU of 30 fps, and the strip still follows video.
-Smoothing and gamma are a first guess and wait for a comparison with HyperHDR, see
+Smoothing and gamma are a first guess and wait for Pavel's judgement on the strip, see
 [requirements.md](requirements.md#open-questions). The board applies no gamma to realtime data,
 so a client that skips its own gamma sends a washed-out picture.
 
