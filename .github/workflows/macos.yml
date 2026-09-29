@@ -1,0 +1,21 @@
+# Builds the macOS client and runs its checks, as desktop/macos/tools/build.sh does locally.
+name: macos
+
+on:
+  push:
+    paths: ["desktop/macos/**", ".github/workflows/macos.yml"]
+  pull_request:
+    paths: ["desktop/macos/**", ".github/workflows/macos.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: desktop/macos
+    steps:
+      - uses: actions/checkout@v4
+      - run: tools/build.sh

@@ -6,15 +6,14 @@ A desktop client captures the screen and streams one colour per LED over UDP. An
 [WLED](https://kno.wled.ge) drives the strip. When the monitor is off or unplugged, the strip goes
 dark.
 
-The project is at the requirements stage. Since 2026-09-29 the macOS prototype on branch
-`feat/macos-client` drives the strip. It replaced HyperHDR, see
-[ADR-0001](docs/adr/0001-replace-hyperhdr.md).
+The macOS client is a prototype that has driven the strip since 2026-09-29. It replaced HyperHDR,
+see [ADR-0001](docs/adr/0001-replace-hyperhdr.md).
 
 ## Components
 
 | Path | Component | Status |
 | --- | --- | --- |
-| `desktop/macos/` | macOS client | Requirements; a prototype lives on branch `feat/macos-client` |
+| `desktop/macos/` | macOS client, a Swift LaunchAgent | Prototype; drives the strip |
 | `desktop/windows/` | Windows client | Requirements; no code |
 | `firmware/esp32/` | WLED firmware and board configuration | Running on the board |
 
