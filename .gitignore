@@ -1,0 +1,8 @@
+# Agent worktrees; each is a separate checkout of this repository.
+.claude/worktrees/
+
+# Personal Claude Code settings; not shared.
+.claude/settings.local.json
+
+# macOS directory metadata.
+.DS_Store

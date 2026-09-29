@@ -1,0 +1,45 @@
+{
+  "skill_name": "markdown-formatting",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "this table renders as a wall of pipes on github and i can't see why:\n\nSome intro text\n| Flag | Meaning |\n|---|---|\n| -v | verbose |\n| -r | recurse | into subdirs |",
+      "expected_output": "Two defects found: no blank line before the table, and a row with three cells against a two-cell header.",
+      "assertions": [
+        "The missing blank line before the table is identified as the reason it renders as a paragraph",
+        "The three-cell row is identified against the two-cell header",
+        "The fix escapes the literal pipe or restructures the row",
+        "A corrected table is produced with a delimiter row of at least three hyphens per column"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "write me a README for a small cli tool called 'tarp' that archives a directory and uploads it to s3",
+      "expected_output": "A README that passes markdownlint: one H1 first, blank lines around every block, fenced code with a language, no bare URLs.",
+      "assertions": [
+        "The file opens with a single `#` heading on the first line",
+        "Every fenced code block declares a language",
+        "Every list and table is preceded and followed by a blank line",
+        "Heading levels descend one at a time",
+        "No image or link is produced with empty text or a bare URL"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "clean up the formatting in this doc, don't touch the wording:\n\nSetup\n=====\n* install it\n* run it\n```\nnpm i\n```\n####Notes\nsee https://example.com for more",
+      "expected_output": "A rewrite fixing heading style, the skipped level, the missing blank lines, the missing fence language and the bare URL, with the wording unchanged.",
+      "assertions": [
+        "The setext heading is converted to ATX",
+        "The `####` heading is corrected to the next level down from the first heading",
+        "A space is added after the hashes",
+        "The fence declares a language",
+        "The bare URL is wrapped in angle brackets or turned into a link",
+        "Blank lines separate the list, the fence and the headings",
+        "No word of the original prose is changed"
+      ],
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+extends: existence
+message: "Long dash. Use a hyphen, or split the sentence."
+level: error
+# An em or en dash reaches a file from an editor's autocorrect and from every
+# model that writes prose. It survives review because it looks deliberate.
+# `raw` and not `tokens`: these are characters, not words, so no word boundary
+# applies and the two alternatives belong in one expression.
+raw:
+  - '[\x{2014}\x{2013}]'

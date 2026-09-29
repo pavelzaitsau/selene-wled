@@ -1,0 +1,46 @@
+{
+  "skill_name": "branch-names",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "i'm about to start on PLAT-1184, the retry logic keeps firing after the request has already timed out. what should i call the branch",
+      "expected_output": "One branch name: fix prefix as a folder, the ticket id lower case, a short slug, under 40 characters.",
+      "assertions": [
+        "The name starts with `fix/`",
+        "The ticket id appears as `plat-1184`, lower case, immediately after the prefix",
+        "The whole name is 40 characters or fewer",
+        "The name contains exactly one slash",
+        "The name contains no upper case letter",
+        "The slug does not repeat the word `fix`"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "review these branch names against our convention: Feature/KI-62-Fix-the-bug-where-retired-gaps-still-sit-in-the-queue, claude/wip, chore/deps",
+      "expected_output": "A rejection naming each violation, with a corrected name for the first two.",
+      "assertions": [
+        "The upper case in the first name is identified as a violation, with the case-insensitive filesystem collision as the reason",
+        "`Feature` is identified as outside the type list, and `fix` is proposed instead",
+        "The first name is identified as over the length budget",
+        "`fix` in the slug is identified as repeating the prefix",
+        "`claude/` is identified as an owner prefix rather than a type",
+        "`wip` is identified as saying nothing a reader can act on",
+        "`chore/deps` is accepted, or only its missing ticket id is questioned"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "my agent made a branch called claude/branch-naming-54825b and i've already pushed it and opened a PR. rename it to our convention",
+      "expected_output": "A warning that a rename after a push closes the pull request, and the two ways out.",
+      "assertions": [
+        "The answer states that renaming after a push closes the open pull request and its review threads",
+        "Renaming through the forge's own UI is named as the way that keeps the pull request",
+        "`git branch -m` is given as the local half, not as the whole answer",
+        "A conforming name is proposed, with a type prefix and no owner prefix"
+      ],
+      "files": []
+    }
+  ]
+}

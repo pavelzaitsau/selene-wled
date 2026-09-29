@@ -1,0 +1,11 @@
+// markdownlint-cli2 wrapper for the markdown-formatting skill.
+//
+// It exists because `customRules` is a cli2 option and not a markdownlint one,
+// so a rule cannot be carried by `.markdownlint.jsonc` beside it. A project that
+// runs cli2 with its own config adds the same two lines rather than this file.
+//
+// Run with: markdownlint-cli2 --config assets/.markdownlint-cli2.jsonc "**/*.md"
+{
+  "config": { "extends": "./.markdownlint.jsonc" },
+  "customRules": ["./rules/table-row-outside-table.js"]
+}

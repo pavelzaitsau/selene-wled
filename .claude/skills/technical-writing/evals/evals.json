@@ -1,0 +1,47 @@
+{
+  "skill_name": "technical-writing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "tighten this up for our runbook please:\n\nIt is worth noting that the retry mechanism will basically be triggered by the worker in the event that a timeout is encountered, and it is important that the timeout value that is configured is not set to a value that is lower than the backoff, because this breaks it.",
+      "expected_output": "A rewrite in active voice, present tense, one fact per sentence, with the hedges and the rhetorical opener gone and the consequence stated.",
+      "assertions": [
+        "The rewrite names the worker as the actor rather than leaving the action agentless",
+        "`It is worth noting that` is deleted rather than reworded",
+        "`basically` is deleted",
+        "`will be triggered` becomes present tense",
+        "The sentence is split so that no sentence carries two facts",
+        "No sentence exceeds 25 words",
+        "The orphan `this` is replaced by the noun it refers to",
+        "The consequence of a timeout below the backoff is stated as a fact, not as `it is important that`"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "we picked postgres over dynamodb for the event store, mostly because we already run postgres and the team knows it, and dynamo's 400kb item limit would have forced us to split events. write that up.",
+      "expected_output": "An ADR, because the decision had a real alternative, using the fixed ADR shape rather than an invented one.",
+      "assertions": [
+        "The output is an ADR and says so, rather than a free-form note or a README section",
+        "The rejected alternative is named with the reason it was rejected",
+        "The 400 KB item limit appears as a digit with its unit",
+        "No section of the template is dropped as inapplicable",
+        "The decision appears before its justification"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "review the comments in this function and tell me which ones to keep:\n\n// Retry handler\nfunc retry(req Request) error {\n  // increment the attempt counter\n  attempts++\n  // The vendor returns 200 with an empty body on a throttled request.\n  // Treating it as success loses the page silently.\n  if len(body) == 0 { return errThrottled }\n  // TODO: make this configurable\n  return nil\n}",
+      "expected_output": "Two comments deleted, one kept, and the TODO either given an owner and a condition or deleted.",
+      "assertions": [
+        "`// Retry handler` is identified as restating the signature and deleted",
+        "`// increment the attempt counter` is identified as restating the next line and deleted",
+        "The vendor comment is kept, because it states an external constraint the code cannot state",
+        "The bare TODO is rejected for carrying no owner, no ticket and no condition",
+        "The replacement TODO follows `TODO(owner, ticket): <action>, blocked on <condition>`, or the answer says to do it now or delete it"
+      ],
+      "files": []
+    }
+  ]
+}

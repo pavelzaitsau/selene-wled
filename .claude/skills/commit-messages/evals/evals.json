@@ -1,0 +1,43 @@
+{
+  "skill_name": "commit-messages",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "i fixed the thing where our retry logic kept firing after the request had already timed out, it was in src/http/retry.go, ticket is PLAT-1184. what should the commit message be",
+      "expected_output": "A single-line message: type fix, optional scope, ticket id right after the colon, imperative lower-case description, no body, no period.",
+      "assertions": [
+        "The subject starts with `fix` and a colon, optionally with a scope in parentheses",
+        "PLAT-1184 appears in the subject, immediately after the colon",
+        "The description is lower case, imperative, and has no trailing period",
+        "The subject is 72 characters or fewer",
+        "No body is produced, because the subject carries the change"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "we're changing the pagination API so callers pass a cursor instead of an offset. offset is gone entirely. write me the commit message",
+      "expected_output": "A breaking change marked both with ! before the colon and with a BREAKING CHANGE footer naming what breaks.",
+      "assertions": [
+        "The subject carries `!` immediately before the colon",
+        "A `BREAKING CHANGE:` footer is present, uppercase, after a blank line",
+        "The footer states what a caller must change, not only that something changed",
+        "The type is `feat`"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "here's my commit message, does it follow our convention? 'Updated the parser and also fixed a bug in the tokenizer. Co-Authored-By: Claude <noreply@anthropic.com>'",
+      "expected_output": "A rejection naming each violation and a corrected version split into two commits.",
+      "assertions": [
+        "The past tense `Updated` is identified as a violation",
+        "The attribution line is identified as banned",
+        "The message is identified as covering two types of change, so two commits",
+        "A corrected subject is offered for each of the two commits",
+        "The missing type prefix is identified"
+      ],
+      "files": []
+    }
+  ]
+}

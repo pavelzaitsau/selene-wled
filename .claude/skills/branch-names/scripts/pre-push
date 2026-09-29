@@ -1,0 +1,56 @@
+#!/bin/sh
+# Reject a push of a branch whose name is off the convention. The hook calls
+# branch-name.sh from its own directory, so install both:
+#   cp scripts/pre-push scripts/branch-name.sh .git/hooks/
+#   chmod +x .git/hooks/pre-push .git/hooks/branch-name.sh
+#
+# git feeds one line per ref on stdin:
+#   <local ref> <local sha> <remote ref> <remote sha>
+# A delete arrives with an all-zero local sha and is let through.
+#
+# Set SKIP_BRANCH_CHECK=1 for the one push that has to go out under an old name.
+set -u
+
+[ "${SKIP_BRANCH_CHECK:-0}" = "1" ] && exit 0
+
+hook_dir=$(dirname "$0")
+checker="$hook_dir/branch-name.sh"
+if [ ! -x "$checker" ]; then
+  checker=$(command -v branch-name.sh || true)
+fi
+if [ -z "$checker" ] || [ ! -x "$checker" ]; then
+  # A hook that cannot check is not a reason to publish an unchecked name.
+  # Installing the hook without branch-name.sh is the usual cause.
+  echo "pre-push: branch-name.sh not found next to the hook or on PATH" >&2
+  echo "pre-push: install it beside the hook, or set SKIP_BRANCH_CHECK=1" >&2
+  exit 1
+fi
+
+zero=0000000000000000000000000000000000000000
+fail=0
+
+while read -r local_ref local_sha remote_ref _remote_sha; do
+  [ -n "${local_ref:-}" ] || continue
+  [ "$local_sha" = "$zero" ] && continue
+  # `git push origin HEAD:refs/heads/x` sends HEAD as the local ref, so fall
+  # back to the remote ref, which carries the name that lands.
+  ref=$local_ref
+  case "$ref" in
+    refs/heads/*) ;;
+    *) ref=${remote_ref:-} ;;
+  esac
+  case "$ref" in
+    refs/heads/*) ;;
+    *) continue ;;
+  esac
+  branch=${ref#refs/heads/}
+  if ! "$checker" --check "$branch"; then
+    fail=1
+  fi
+done
+
+if [ "$fail" -ne 0 ]; then
+  echo "pre-push: rename the branch before pushing, or set SKIP_BRANCH_CHECK=1" >&2
+fi
+
+exit "$fail"

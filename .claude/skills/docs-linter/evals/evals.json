@@ -1,0 +1,40 @@
+{
+  "skill_name": "docs-linter",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "our docs keep saying 'this probably works' and 'it seems to be faster'. i want CI to fail on that kind of wording. we use github actions and the docs live in docs/",
+      "expected_output": "A Vale setup: config at the repository root, a hedging rule at error level, a CI step, and the note that Vale is a separate binary.",
+      "assertions": [
+        "A `.vale.ini` is produced with `BasedOnStyles` listing both `Vale` and the project style",
+        "A hedging rule is produced that catches `probably` and `it seems`",
+        "The rule is set to error level, since the request is for CI to fail",
+        "The answer states that Vale is not installed by the language package manager",
+        "A CI step scoped to `docs/` is produced"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "my vale rule isn't matching anything. i put four alternatives under raw: and it just never fires",
+      "expected_output": "Identification of the raw-versus-tokens trap, with the corrected rule.",
+      "assertions": [
+        "The answer states that a list under `raw:` is joined into one expression rather than OR-ed",
+        "The corrected rule uses `tokens:`",
+        "The answer does not suggest lookahead or lookbehind, which RE2 does not support"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "we banned the word 'delivery' in our style rules and now the linter screams on every page of the shipping docs. what do i do",
+      "expected_output": "Recognition of a false positive on real domain vocabulary, and the two-probe procedure for fixing a rule.",
+      "assertions": [
+        "The answer identifies the banned word as legitimate domain vocabulary",
+        "It recommends a free-words list rather than an exception per file",
+        "It describes a probe file for what the rule must catch and one for what it must not catch"
+      ],
+      "files": []
+    }
+  ]
+}
