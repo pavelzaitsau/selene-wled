@@ -1,0 +1,30 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Selene test pattern</title>
+<style>html,body{margin:0;height:100%;background:#000;overflow:hidden;font:600 28px system-ui;color:#888}
+#s{position:fixed;inset:0}.e{position:absolute}
+#t{top:0;left:0;right:0;height:15%}#b{bottom:0;left:0;right:0;height:15%}
+#l{top:0;bottom:0;left:0;width:10%}#r{top:0;bottom:0;right:0;width:10%}
+#c{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center}</style></head>
+<body><div id="s"><div class="e" id="t"></div><div class="e" id="b"></div><div class="e" id="l"></div><div class="e" id="r"></div></div>
+<div id="c"><div id="n"></div><div style="font-size:18px;margin-top:10px">click or space: next test · arrow keys: step · F: full screen</div></div>
+<script>
+const $=id=>document.getElementById(id);let raf;
+const tests=[
+['Sides: left red · top green · right blue · bottom white',()=>set('#f00','#0f0','#00f','#fff')],
+['Full screen red',()=>fill('#f00')],['Full screen green',()=>fill('#0f0')],['Full screen blue',()=>fill('#00f')],['Full screen white',()=>fill('#fff')],
+['Black: the strip goes dark',()=>fill('#000')],
+['Dot running clockwise from the bottom-left corner',run],
+['Rainbow',rainbow]];
+let i=0;
+function clear(){cancelAnimationFrame(raf);$('s').style.background='#000';['t','b','l','r'].forEach(k=>$(k).style.background='transparent');$('s').querySelectorAll('.dot').forEach(d=>d.remove())}
+function set(l,t,r,b){$('l').style.background=l;$('t').style.background=t;$('r').style.background=r;$('b').style.background=b}
+function fill(c){$('s').style.background=c}
+function run(){const d=document.createElement('div');d.className='dot';Object.assign(d.style,{position:'fixed',width:'8vw',height:'12vh',background:'#fff'});$('s').appendChild(d);
+ const t0=performance.now();(function f(now){const p=((now-t0)/8000)%1,W=innerWidth,H=innerHeight,w=W*.08,h=H*.12,per=2*(W+H);let s=p*per,x,y;
+ if(s<H){x=0;y=H-s-h}else if((s-=H)<W){x=s;y=0}else if((s-=W)<H){x=W-w;y=s}else{s-=H;x=W-s-w;y=H-h}
+ d.style.left=Math.max(0,Math.min(W-w,x))+'px';d.style.top=Math.max(0,Math.min(H-h,y))+'px';raf=requestAnimationFrame(f)})(t0)}
+function rainbow(){const t0=performance.now();(function f(now){const a=(now-t0)/20;$('s').style.background=`conic-gradient(from ${a}deg,red,yellow,lime,cyan,blue,magenta,red)`;raf=requestAnimationFrame(f)})(t0)}
+function show(){clear();$('n').textContent=(i+1)+'/'+tests.length+' · '+tests[i][0];tests[i][1]()}
+addEventListener('click',()=>{i=(i+1)%tests.length;show()});
+addEventListener('keydown',e=>{if(e.key==' '||e.key=='ArrowRight'){i=(i+1)%tests.length;show()}if(e.key=='ArrowLeft'){i=(i-1+tests.length)%tests.length;show()}if(e.key=='f'||e.key=='F')document.documentElement.requestFullscreen()});
+show();
+</script></body></html>
