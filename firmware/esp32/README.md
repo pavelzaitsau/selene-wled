@@ -25,9 +25,22 @@ them. This page lists the values the board holds. The parts and the wiring are i
 | Current limit (ABL) | 2500 mA, below the 3 A of the supply |
 | Power-on state | Off (`def.on=false`) |
 | Segment | Effect Solid, colour black |
+| Boot preset | 1, "Black": segment 0 only, no `on` and no brightness |
 
 The power-on state keeps the strip dark until a client switches it on. The black Solid segment is
-what the strip shows when a client stops streaming.
+what the strip shows when a client stops streaming. Without the boot preset, WLED starts with its
+default orange `[255,160,0]`, and the strip glows orange whenever streaming stops.
+
+Preset 1 holds no `on` key, so applying it at boot leaves the power-on state off. One request
+writes the segment, saves the preset and makes it the boot preset. It needs no PIN:
+
+```bash
+curl -s -X POST -H 'Content-Type: application/json' http://192.168.1.35/json/state \
+  -d '{"psave":1,"n":"Black","o":true,"bootps":1,"seg":[{"id":0,"fx":0,"col":[[0,0,0],[0,0,0],[0,0,0]]}]}'
+```
+
+`"o":true` makes WLED store the request body as the preset instead of the current state, and
+`bootps` sets the boot preset. `presets.cpp` in WLED 16.0.1 handles both keys.
 
 ## Realtime
 
@@ -66,11 +79,9 @@ Use [`install.wled.me`](https://install.wled.me) from Chrome, with WLED 16.0.1 f
 5 V supply off before connecting USB, see [docs/hardware.md](../../docs/hardware.md#wiring).
 
 Then set Wi-Fi over serial with the Improv protocol, or through the `WLED-AP` access point. After
-that, set the LEDs, the power-on state, the segment and the security settings from the tables
-above.
+that, set the LEDs, the power-on state and the security settings from the tables above, and send
+the boot preset request.
 
 ## Known deviations
 
-| Date | Setting | Expected | Found on the board |
-| --- | --- | --- | --- |
-| 2026-09-29 | Segment colour | Black | `[255,160,0]`, orange; the strip glows orange when streaming stops |
+None. The last check was on 2026-09-29.
