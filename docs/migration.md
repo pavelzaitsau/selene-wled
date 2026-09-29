@@ -1,11 +1,12 @@
 # Migration from HyperHDR
 
-Status on 2026-09-29: **HyperHDR drives the strip. Selene is at the requirements stage.** The
-switch waits for a macOS client that meets [requirements.md](requirements.md).
+Status on 2026-09-29: **steps 1 and 2 are done.** The prototype from branch `feat/macos-client`
+drives the strip, and the watcher and HyperHDR are stopped. HyperHDR stays installed until the
+prototype passes every requirement in step 3.
 
 Delete this file and `legacy/` in the commit that removes HyperHDR.
 
-## What runs on the Mac now
+## The HyperHDR setup
 
 | Piece | Where |
 | --- | --- |
