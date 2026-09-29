@@ -15,10 +15,15 @@ Each LED averages one zone at the edge of the picture, in the LED order from
 | --- | --- |
 | Zone depth, top and bottom | 8% of the picture height |
 | Zone depth, left and right | 5% of the picture width |
-| Smoothing | Exponential moving average, factor 0.30 per frame; provisional |
+| Smoothing | Exponential moving average, time constant 0.0935 s; provisional |
 | Output gamma | 1.5, applied by the client; provisional |
-| Frame rate | At most 30 fps |
+| Frame rate | At most 15 fps |
 
+The smoothing factor for a frame is `1 - exp(-dt / 0.0935 s)`, where `dt` is the time since the
+previous frame. At 30 fps that is 0.30 per frame, and at 15 fps 0.51. A factor tied to time keeps
+the look of the smoothing when a client changes its frame rate.
+
+At 15 fps the macOS client costs half the CPU of 30 fps, and the strip still follows video.
 Smoothing and gamma are a first guess and wait for a comparison with HyperHDR, see
 [requirements.md](requirements.md#open-questions). The board applies no gamma to realtime data,
 so a client that skips its own gamma sends a washed-out picture.
