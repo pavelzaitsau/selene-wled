@@ -1,0 +1,11 @@
+// The rules come from the vendored markdown-formatting skill. Refresh them with
+// tools/sync-skills.sh, not by editing here.
+{
+  "config": {
+    "extends": "./.claude/skills/markdown-formatting/assets/.markdownlint.jsonc"
+  },
+  "customRules": [
+    "./.claude/skills/markdown-formatting/assets/rules/table-row-outside-table.js"
+  ],
+  "ignores": [".claude/**", ".vale/**", "**/node_modules/**"]
+}

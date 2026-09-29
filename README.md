@@ -42,6 +42,8 @@ tools/install-hooks.sh   # once per clone: commit message and branch name checks
 tools/lint-docs.sh       # markdownlint and Vale over every Markdown file
 ```
 
+GitHub Actions runs `tools/lint-docs.sh` on every push and pull request.
+
 ## Licence
 
 MIT, see [LICENSE](LICENSE). The vendored skills under `.claude/skills/` are MIT-0.
