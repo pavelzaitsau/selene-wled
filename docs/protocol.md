@@ -52,10 +52,23 @@ The client switches WLED with `POST /json/state` on the board:
 | --- | --- |
 | Connected and awake | Send `{"on":true,"bri":255}`, then stream |
 | Asleep | Stop streaming; after the timeout WLED shows its own state, a black Solid segment |
-| Disconnected | Stop capture, send `{"on":false}` |
+| Disconnected | Stop capture, release WLED |
 
-The client re-sends the current power state every 60 s. The board boots switched off, so the
-re-send also recovers from a board restart.
+A client releases WLED on a monitor disconnect, on Stop in its menu, on Quit, and when it starts
+without the monitor. To release, the client waits 4 s and reads `/json/si`. When `live` is
+`true` and `lip` is another address, another computer streams, and the client leaves WLED alone.
+Otherwise it sends `{"on":false}`. [ADR-0003](adr/0003-several-computers.md) records the choice.
+
+A monitor that moves to another computer can take longer than 4 s to show a picture there. The old
+computer then finds no stream and switches WLED off, and the new one switches it on when it sees
+the monitor. The strip shows no difference: while no computer has a picture, nothing streams, and
+WLED goes dark 2 s after the last packet either way.
+
+A client with the monitor re-sends `{"on":true,"bri":255}` every 60 s. It also reads `/json/si`
+every 10 s and switches WLED on when `on` is `false`. The board boots switched off, so the re-send
+recovers from a board restart. The check also undoes a manual switch-off in the WLED app within
+10 s; Stop in the client menu is the way to darken the strip while the monitor is connected. A
+client without the monitor sends nothing after its release.
 
 The client finds the monitor by a name that contains `LG ULTRAFINE`. Display IDs change between
 ports and reboots, and the name does not.

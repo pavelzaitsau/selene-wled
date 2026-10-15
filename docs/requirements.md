@@ -27,6 +27,8 @@ These requirements bind every desktop client, on every OS. The wire format and t
 ### R3 Follow the monitor
 
 - Must: The client MUST switch WLED on when the monitor connects and off when it disconnects.
+  It MUST NOT switch WLED off while another computer streams to it, see
+  [R11](#r11-two-or-more-computers).
 - Verified by: Unplug and replug the monitor. The strip goes dark within 5 s and comes back within
   5 s.
 - Out of scope: Switching WLED from any other trigger, such as a schedule.
@@ -49,6 +51,14 @@ These requirements bind every desktop client, on every OS. The wire format and t
 - Must: The client MUST start at login and restart after a crash, with no user action.
 - Verified by: Reboot the computer and log in. The strip lights within 30 s.
 - Out of scope: Streaming before login.
+
+### R11 Two or more computers
+
+- Must: Two or more computers MAY run the client against one board. The strip MUST follow the computer
+  that has the monitor, and a computer without it MUST NOT darken the strip.
+- Verified by: Run the client on two computers and move the monitor cable between them. The strip
+  follows the picture within 5 s of each move and stays lit for 3 min.
+- Out of scope: Two computers with the monitor at once.
 
 ## Resources
 

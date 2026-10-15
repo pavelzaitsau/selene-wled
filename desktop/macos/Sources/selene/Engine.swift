@@ -27,6 +27,7 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
     private var lastWledPush = Date.distantPast
     private var wledError: String?
     private var wledRequest = 0
+    private var release = 0
     /// The local address of the UDP connection, which WLED reports as `lip` while it streams from us.
     private(set) var localIP: String?
     private var captureSize: (width: Int, height: Int)?
@@ -103,7 +104,7 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
         enabled = false
         stopStream()
         frameQueue.async { self.paused = true }
-        setWLED(on: false, completion: done)
+        releaseWLED(after: 0, completion: done)
         onChange?()
     }
 
@@ -157,9 +158,14 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
         let paused = !enabled || id == nil || asleep
         frameQueue.async { self.paused = paused }
 
-        let wantOn = enabled && id != nil
-        if wledOn != wantOn || Date().timeIntervalSince(lastWledPush) > Config.wledStateRefresh {
-            setWLED(on: wantOn)
+        // Only the computer with the monitor owns WLED power. Without it, a client releases WLED
+        // once and stays silent, so it never darkens a strip another computer streams to.
+        if enabled && id != nil {
+            if wledOn != true || Date().timeIntervalSince(lastWledPush) > Config.wledStateRefresh {
+                setWLED(on: true)
+            }
+        } else if wledOn != false {
+            releaseWLED(after: Config.releaseDelay)
         }
         if enabled, let id = id, !asleep, stream == nil, !starting { startStream(displayID: id) }
 
@@ -276,33 +282,70 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
         }.resume()
     }
 
+    /// Switches WLED off unless another computer streams to it. `after` gives the computer that
+    /// gains the monitor time to start its stream. A newer power change cancels the release.
+    private func releaseWLED(after delay: TimeInterval, completion: (() -> Void)? = nil) {
+        wledOn = false
+        release += 1
+        let id = release
+        let current = { id == self.release && self.wledOn == false }
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            guard current() else { completion?(); return }
+            self.fetchBoard { status in
+                guard current() else { completion?(); return }
+                // Without a known local address, `lip` may be this computer's own, so switch off.
+                if case let .online(live, liveIP, _, _, _, _) = status, live, !liveIP.isEmpty,
+                   let me = self.localIP, liveIP != me {
+                    log("WLED left on: \(liveIP) streams to it", dedupe: true)
+                    self.wledConfirmed = nil
+                    completion?()
+                } else {
+                    self.setWLED(on: false, completion: completion)
+                }
+            }
+        }
+    }
+
     // MARK: Board status
 
-    /// Reads `/json/info` from the board and calls `onChange` with the result. Main thread.
+    /// Reads `/json/si` from the board for the menu, and switches WLED back on when this computer
+    /// has the monitor and finds it off. Main thread.
     func pollBoard() {
         guard !boardPolling else { return }
         boardPolling = true
         lastBoardPoll = Date()
-        let url = URL(string: "http://\(Config.wledHost)/json/info")!
+        fetchBoard { status in
+            self.boardPolling = false
+            self.board = status
+            // Another computer's release can land after this computer's `on`.
+            if case let .online(_, _, on, _, _, _) = status, !on, self.wledOn == true {
+                log("WLED found off -> on")
+                self.setWLED(on: true)
+            }
+            self.onChange?()
+        }
+    }
+
+    /// Reads state and info from the board and calls `completion` on the main thread.
+    private func fetchBoard(_ completion: @escaping (BoardStatus) -> Void) {
+        let url = URL(string: "http://\(Config.wledHost)/json/si")!
         // WLED sends no cache headers, so the default policy may hand back an old response.
         let req = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 3)
         URLSession.shared.dataTask(with: req) { data, _, error in
             let status: BoardStatus
-            if let data = data, let info = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            if let data = data, let si = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let info = si["info"] as? [String: Any], let state = si["state"] as? [String: Any] {
                 let wifi = info["wifi"] as? [String: Any]
                 status = .online(live: info["live"] as? Bool ?? false,
                                  liveIP: info["lip"] as? String ?? "",
+                                 on: state["on"] as? Bool ?? false,
                                  signal: wifi?["signal"] as? Int,
                                  uptime: info["uptime"] as? Int,
                                  version: info["ver"] as? String ?? "?")
             } else {
-                status = .unreachable(error?.localizedDescription ?? "no valid /json/info")
+                status = .unreachable(error?.localizedDescription ?? "no valid /json/si")
             }
-            DispatchQueue.main.async {
-                self.boardPolling = false
-                self.board = status
-                self.onChange?()
-            }
+            DispatchQueue.main.async { completion(status) }
         }.resume()
     }
 
@@ -355,5 +398,5 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
 enum BoardStatus {
     case unknown
     case unreachable(String)
-    case online(live: Bool, liveIP: String, signal: Int?, uptime: Int?, version: String)
+    case online(live: Bool, liveIP: String, on: Bool, signal: Int?, uptime: Int?, version: String)
 }

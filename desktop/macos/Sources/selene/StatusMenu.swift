@@ -80,10 +80,10 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             return ["Board: checking"]
         case .unreachable:
             return ["Board: unreachable"]
-        case let .online(live, liveIP, signal, uptime, version):
+        case let .online(live, liveIP, on, signal, uptime, version):
             var lines: [String]
             if !live {
-                lines = ["Board: online, not live"]
+                lines = [on ? "Board: on, not live" : "Board: off"]
             } else if liveIP == engine.localIP {
                 lines = ["Board: live from this Mac"]
             } else {

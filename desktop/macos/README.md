@@ -29,12 +29,12 @@ the capture size, the WLED state, the fps and the board status. The tooltip text
 | Menu item | Effect |
 | --- | --- |
 | FPS | Frames captured per second over the last 2 s; 0 on a still picture |
-| Board | `live` and `lip`, Wi-Fi signal, uptime and WLED version from `/json/info` |
+| Board | `live`, `lip` and power, Wi-Fi signal, uptime and WLED version from `/json/si` |
 | Stop | Releases the capture and turns WLED off; the moon turns hollow |
 | Start | Resumes the stream on the monitor |
 | Quit Selene | Turns WLED off and exits |
 
-Selene reads `/json/info` every 10 s, and every 2 s while the menu is open. The board line says
+Selene reads `/json/si` every 10 s, and every 2 s while the menu is open. The board line says
 `live from this Mac` when `lip` matches the local address of the UDP stream.
 
 After Quit, the LaunchAgent leaves Selene stopped, because it restarts the app only after a crash.
@@ -43,6 +43,16 @@ To start Selene again, run:
 ```bash
 launchctl kickstart gui/$(id -u)/com.pavel.selene
 ```
+
+## Several Macs
+
+Selene runs on every Mac the monitor cable moves between, with the same build and settings. Only
+the Mac with the monitor switches WLED on. A Mac without the monitor switches WLED off once, and
+only when no other Mac streams to the board. [docs/protocol.md](../../docs/protocol.md#power) owns
+the rules.
+
+Each Mac needs its own signing certificate, see [Signing](#signing), and its own Screen Recording
+and Local Network grants.
 
 ## Signing
 
