@@ -3,9 +3,11 @@
 set -euo pipefail
 
 LABEL=com.pavel.selene
-launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
-rm -f "$HOME/Library/LaunchAgents/$LABEL.plist"
-rm -rf "$HOME/Applications/Selene.app"
+DEST="$HOME/Applications/Selene.app"
+if [ -f "$DEST/Contents/Library/LaunchAgents/$LABEL.plist" ]; then
+  "$DEST/Contents/MacOS/Selene" --unregister || true
+fi
+rm -rf "$DEST"
 tccutil reset ScreenCapture "$LABEL" >/dev/null 2>&1 || true
 
 echo "uninstalled; log left at ~/Library/Logs/selene.log"

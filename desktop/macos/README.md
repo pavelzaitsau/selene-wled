@@ -1,6 +1,6 @@
 # Selene for macOS
 
-Prototype. `selene` is a Swift LaunchAgent that streams the edges of the LG monitor to WLED. It
+Prototype. Selene is a Swift LaunchAgent that streams the edges of the LG monitor to WLED. It
 aims at [docs/requirements.md](../../docs/requirements.md) and speaks
 [docs/protocol.md](../../docs/protocol.md). Since 2026-09-29 it drives the strip in place of
 HyperHDR.
@@ -13,12 +13,36 @@ Run from `desktop/macos/`:
 
 ```bash
 tools/build.sh      # run the checks, build build/Selene.app, sign it ad hoc
-tools/install.sh    # copy to ~/Applications, load LaunchAgent com.pavel.selene
+tools/install.sh    # copy to ~/Applications, register LaunchAgent com.pavel.selene
 tools/uninstall.sh  # remove the app, the LaunchAgent and the Screen Recording grant
 ```
 
 `tools/install.sh` replaces a running copy. The first run asks for Screen Recording and Local
 Network, both for `Selene.app`. The log is `~/Library/Logs/selene.log`.
+
+## Menu bar
+
+Selene shows a moon in the menu bar. The tooltip on the moon shows the run state, the monitor,
+the capture size, the WLED state, the fps and the board status. The tooltip text refreshes every
+2 s.
+
+| Menu item | Effect |
+| --- | --- |
+| FPS | Frames captured per second over the last 2 s; 0 on a still picture |
+| Board | `live` and `lip`, Wi-Fi signal, uptime and WLED version from `/json/info` |
+| Stop | Releases the capture and turns WLED off; the moon turns hollow |
+| Start | Resumes the stream on the monitor |
+| Quit Selene | Turns WLED off and exits |
+
+Selene reads `/json/info` every 10 s, and every 2 s while the menu is open. The board line says
+`live from this Mac` when `lip` matches the local address of the UDP stream.
+
+After Quit, the LaunchAgent leaves Selene stopped, because it restarts the app only after a crash.
+To start Selene again, run:
+
+```bash
+launchctl kickstart gui/$(id -u)/com.pavel.selene
+```
 
 ## Signing
 
@@ -97,10 +121,11 @@ and opendirectoryd stayed within noise in every variant. HyperHDR cost about 65%
 | Path | Contents |
 | --- | --- |
 | `Sources/SeleneCore/` | Configuration, zone layout, DRGB encoding; Foundation only |
-| `Sources/selene/` | The daemon: capture, WLED power, logging |
+| `Sources/selene/` | The daemon: capture, WLED power, menu bar item, logging |
 | `Sources/selene-check/` | Checks for `SeleneCore`, run by `tools/build.sh` |
 | `bundle/Info.plist` | App bundle metadata, including the Local Network prompt text |
-| `launchd/` | LaunchAgent template that `tools/install.sh` fills in |
+| `bundle/com.pavel.selene.plist` | The LaunchAgent; `tools/build.sh` puts it in the bundle, `Selene --register` hands it to launchd |
+| `tools/make-icon.swift` | Draws the app icon; `tools/build.sh` turns it into `AppIcon.icns` when the script changes |
 
 Command Line Tools ship neither XCTest nor the swift-testing macros. The checks are therefore a
 plain executable: `swift run selene-check`.
@@ -111,6 +136,7 @@ plain executable: `swift run selene-check`.
 | --- | --- |
 | ScreenCaptureKit delivers no frames for a still picture | The client needs its own timer for the resend in [R5](../../docs/requirements.md#r5-still-picture) |
 | Screen Recording permission is tied to the code signature | An ad-hoc signed rebuild loses the grant; the client logs the missing permission |
+| Login Items matches a plist in `~/Library/LaunchAgents` to its app only by a shared Team ID | The LaunchAgent lives in the bundle and registers through `SMAppService`; a self-signed certificate has no Team ID |
 | A LaunchAgent needs Local Network permission for UDP and HTTP to the LAN | Without it, every send fails silently; the client logs the network state |
 | `NSScreen.localizedName` of the monitor contains `LG ULTRAFINE` | [R2](../../docs/requirements.md#r2-target-monitor) holds on macOS |
 | Each new `SCStream` wakes Control Center and opendirectoryd | [R8](../../docs/requirements.md#r8-one-capture-session): one stream per monitor connection |
@@ -120,6 +146,8 @@ plain executable: `swift run selene-check`.
 | Symptom | Cause | Fix |
 | --- | --- | --- |
 | Log shows `no Screen Recording permission` | A rebuild changed the signature | Grant Screen Recording to `Selene.app` again |
+| Screen Recording is on in System Settings, the log still shows `no Screen Recording permission` or `The user declined TCCs` | The grant belongs to an older install of `com.pavel.selene`; seen on macOS 27 | Run `tools/uninstall.sh`, then `tools/install.sh`, and allow Screen Recording at the new prompt |
 | Log shows `udp: ready`, strip stays dark | Local Network permission is missing | Allow Selene under Privacy & Security, Local Network |
 | Strip glows one flat colour | WLED shows its own state, not the stream | Check `live` and `lip` in `/json/info` |
 | `WLED unreachable` in the log | Board off or off the network | Read `/json/info` on the board |
+| `launchctl print` shows `EX_CONFIG` and no log lines | A stale background item from an older install | Run `Selene --unregister`, then `Selene --register` from the installed app |

@@ -6,7 +6,7 @@ private let logFormatter: DateFormatter = {
 }()
 private var lastLogged = ""
 
-/// Prints a timestamped line to stdout, which launchd sends to ~/Library/Logs/selene.log.
+/// Prints a timestamped line to stdout, which `main.swift` points at ~/Library/Logs/selene.log.
 /// With `dedupe`, a line equal to the previous one is dropped. Safe from any queue.
 func log(_ msg: String, dedupe: Bool = false) {
     logLock.lock(); defer { logLock.unlock() }

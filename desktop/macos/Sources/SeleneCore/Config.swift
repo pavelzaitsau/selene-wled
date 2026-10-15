@@ -12,6 +12,7 @@ public enum Config {
     public static let gamma = 1.5
     public static let keepalive = 1.0                     // s; resend on a static screen
     public static let wledStateRefresh = 60.0             // s; re-assert WLED on/off
+    public static let boardPollInterval = 10.0            // s; read /json/info for the menu
     public static var ledCount: Int { left + top + right + bottom }
 
     // Tunable without a rebuild, which would cost the Screen Recording grant:

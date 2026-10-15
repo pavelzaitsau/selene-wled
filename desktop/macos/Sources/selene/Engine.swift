@@ -25,6 +25,22 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
     private var wledOn: Bool?
     private var wledConfirmed: Bool?
     private var lastWledPush = Date.distantPast
+    private var wledError: String?
+    private var wledRequest = 0
+    /// The local address of the UDP connection, which WLED reports as `lip` while it streams from us.
+    private(set) var localIP: String?
+    private var captureSize: (width: Int, height: Int)?
+    private(set) var enabled = true
+    private var fpsWindowStart = Date()
+    private var framesInWindow = 0
+    /// Frames per second over the last supervision tick; nil without a running capture.
+    private(set) var measuredFPS: Double?
+    private(set) var board = BoardStatus.unknown
+    private var boardPolling = false
+    private var lastBoardPoll = Date.distantPast
+
+    /// Called on the main thread after each supervision tick and after `setEnabled`.
+    var onChange: (() -> Void)?
 
     // Frame queue.
     private var colors = [Double](repeating: 0, count: Config.ledCount * 3)
@@ -43,6 +59,11 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
         // A launchd process without Local Network permission fails its sends silently;
         // this state line is the only trace of it.
         udp.stateUpdateHandler = { state in log("udp: \(state)", dedupe: true) }
+        udp.pathUpdateHandler = { [weak self] path in
+            var ip: String?
+            if case .hostPort(let host, _)? = path.localEndpoint { ip = "\(host)" }
+            DispatchQueue.main.async { self?.localIP = ip }
+        }
         udp.start(queue: frameQueue)
     }
 
@@ -53,8 +74,10 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
         }
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
                                                object: nil, queue: .main) { [weak self] _ in self?.tick() }
-        let supervision = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in self?.tick() }
+        // `.common` keeps supervision running while the menu bar menu is open.
+        let supervision = Timer(timeInterval: 2, repeats: true) { [weak self] _ in self?.tick() }
         supervision.tolerance = 0.5
+        RunLoop.main.add(supervision, forMode: .common)
         let t = DispatchSource.makeTimerSource(queue: frameQueue)
         t.schedule(deadline: .now() + 0.5, repeating: 0.5, leeway: .milliseconds(100))
         t.setEventHandler { [weak self] in self?.keepalive() }
@@ -63,6 +86,44 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
         log("selene started: monitor '\(Config.monitorName)', WLED \(Config.wledHost), \(Config.ledCount) LEDs, "
             + "\(Config.fps) fps, width \(Config.captureWidth), nominal \(Config.nominalResolution)")
         tick()
+    }
+
+    /// Starts or stops streaming. Stopped, Selene releases the capture and turns WLED off.
+    func setEnabled(_ on: Bool) {
+        guard on != enabled else { return }
+        enabled = on
+        log(on ? "streaming started from the menu" : "streaming stopped from the menu")
+        lastWledPush = .distantPast
+        tick()
+    }
+
+    /// Stops streaming, turns WLED off and calls `done` once the board answers or the request
+    /// times out. Without the wait, WLED falls back to its own state, which Selene left on.
+    func shutdown(then done: @escaping () -> Void) {
+        enabled = false
+        stopStream()
+        frameQueue.async { self.paused = true }
+        setWLED(on: false, completion: done)
+        onChange?()
+    }
+
+    /// A few lines on the current state, for the menu bar tooltip. Main thread.
+    var statusSummary: String {
+        let monitor: String
+        if targetID == nil { monitor = "not connected" } else if targetAsleep { monitor = "asleep" } else { monitor = "awake" }
+        let capture: String
+        if let size = captureSize, stream != nil {
+            capture = "\(size.width)x\(size.height)"
+        } else {
+            capture = starting ? "starting" : "off"
+        }
+        let wled: String
+        if let error = wledError { wled = "unreachable (\(error))" } else { wled = wledConfirmed.map { $0 ? "on" : "off" } ?? "unknown" }
+        return ["Selene: \(enabled ? "running" : "stopped")",
+                "Monitor \(Config.monitorName): \(monitor)",
+                "Capture: \(capture)",
+                "WLED \(Config.wledHost): \(wled)",
+                "\(Config.ledCount) LEDs"].joined(separator: "\n")
     }
 
     // MARK: Display supervision
@@ -92,21 +153,30 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
             targetAsleep = asleep
         }
         // A stream on a sleeping monitor still costs GPU time for frames nobody sees.
-        if asleep { stopStream() }
-        frameQueue.async { self.paused = (id == nil) || asleep }
+        if asleep || !enabled { stopStream() }
+        let paused = !enabled || id == nil || asleep
+        frameQueue.async { self.paused = paused }
 
-        let wantOn = id != nil
+        let wantOn = enabled && id != nil
         if wledOn != wantOn || Date().timeIntervalSince(lastWledPush) > Config.wledStateRefresh {
             setWLED(on: wantOn)
         }
-        if let id = id, !asleep, stream == nil, !starting { startStream(displayID: id) }
+        if enabled, let id = id, !asleep, stream == nil, !starting { startStream(displayID: id) }
+
+        let now = Date()
+        let elapsed = now.timeIntervalSince(fpsWindowStart)
+        measuredFPS = stream != nil && !starting && elapsed > 0 ? Double(framesInWindow) / elapsed : nil
+        fpsWindowStart = now
+        framesInWindow = 0
+        if now.timeIntervalSince(lastBoardPoll) > Config.boardPollInterval { pollBoard() }
+        onChange?()
     }
 
     private func startStream(displayID: CGDirectDisplayID) {
         starting = true
         SCShareableContent.getExcludingDesktopWindows(false, onScreenWindowsOnly: false) { content, error in
             DispatchQueue.main.async {
-                guard self.targetID == displayID, !self.targetAsleep else { self.starting = false; return }
+                guard self.enabled, self.targetID == displayID, !self.targetAsleep else { self.starting = false; return }
                 guard let display = content?.displays.first(where: { $0.displayID == displayID }) else {
                     log("capture unavailable: \(error?.localizedDescription ?? "display not shareable")", dedupe: true)
                     self.starting = false
@@ -135,10 +205,20 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
                 s.startCapture { error in
                     DispatchQueue.main.async {
                         self.starting = false
+                        // A stop or a monitor change while the start was pending leaves `s`
+                        // unowned. Left running, it is a second capture session.
+                        if self.stream !== s || !self.enabled || self.targetAsleep {
+                            if error == nil { s.stopCapture { _ in } }
+                            if self.stream === s { self.stream = nil }
+                            return
+                        }
                         if let error = error {
                             log("startCapture failed: \(error.localizedDescription)", dedupe: true)
                             if self.stream === s { self.stream = nil }
                         } else {
+                            self.captureSize = (cfg.width, cfg.height)
+                            self.fpsWindowStart = Date()
+                            self.framesInWindow = 0
                             log("capture started \(cfg.width)x\(cfg.height) @ \(Config.fps) fps")
                         }
                     }
@@ -162,27 +242,66 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
 
     // MARK: WLED power
 
-    private func setWLED(on: Bool) {
+    private func setWLED(on: Bool, completion: (() -> Void)? = nil) {
         wledOn = on
         lastWledPush = Date()
+        wledRequest += 1
+        let request = wledRequest
         var req = URLRequest(url: URL(string: "http://\(Config.wledHost)/json/state")!, timeoutInterval: 4)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.httpBody = on ? #"{"on":true,"bri":255}"#.data(using: .utf8) : #"{"on":false}"#.data(using: .utf8)
         URLSession.shared.dataTask(with: req) { _, resp, error in
             DispatchQueue.main.async {
+                defer { completion?() }
+                // A quick Stop and Start sends two requests, and the board may finish them in
+                // either order. Only the newest one tells the state that `wledOn` asked for.
+                guard request == self.wledRequest else { return }
                 if let error = error {
                     log("WLED unreachable: \(error.localizedDescription)", dedupe: true)
+                    self.wledError = error.localizedDescription
                     self.wledOn = nil          // retry on the next tick
                     self.wledConfirmed = nil
                 } else if (resp as? HTTPURLResponse)?.statusCode != 200 {
                     log("WLED HTTP \((resp as? HTTPURLResponse)?.statusCode ?? 0)", dedupe: true)
+                    self.wledError = "HTTP \((resp as? HTTPURLResponse)?.statusCode ?? 0)"
                     self.wledOn = nil
                     self.wledConfirmed = nil
                 } else if self.wledConfirmed != on {
+                    self.wledError = nil
                     log("WLED \(on ? "on" : "off")")
                     self.wledConfirmed = on
                 }
+            }
+        }.resume()
+    }
+
+    // MARK: Board status
+
+    /// Reads `/json/info` from the board and calls `onChange` with the result. Main thread.
+    func pollBoard() {
+        guard !boardPolling else { return }
+        boardPolling = true
+        lastBoardPoll = Date()
+        let url = URL(string: "http://\(Config.wledHost)/json/info")!
+        // WLED sends no cache headers, so the default policy may hand back an old response.
+        let req = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 3)
+        URLSession.shared.dataTask(with: req) { data, _, error in
+            let status: BoardStatus
+            if let data = data, let info = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                let wifi = info["wifi"] as? [String: Any]
+                status = .online(live: info["live"] as? Bool ?? false,
+                                 liveIP: info["lip"] as? String ?? "",
+                                 signal: wifi?["signal"] as? Int,
+                                 uptime: info["uptime"] as? Int,
+                                 version: info["ver"] as? String ?? "?")
+            } else {
+                status = .unreachable(error?.localizedDescription ?? "no valid /json/info")
+            }
+            DispatchQueue.main.async {
+                self.boardPolling = false
+                self.board = status
+                self.onChange?()
             }
         }.resume()
     }
@@ -212,6 +331,7 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
             colors[i * 3 + 2] += a * (b - colors[i * 3 + 2])
         }
         haveColors = true
+        DispatchQueue.main.async { self.framesInWindow += 1 }
         send(force: false)
     }
 
@@ -230,4 +350,10 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
         lastPacket = pkt
         lastSend = Date()
     }
+}
+
+enum BoardStatus {
+    case unknown
+    case unreachable(String)
+    case online(live: Bool, liveIP: String, signal: Int?, uptime: Int?, version: String)
 }

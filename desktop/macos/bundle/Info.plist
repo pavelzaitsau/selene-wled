@@ -6,8 +6,12 @@
 	<string>com.pavel.selene</string>
 	<key>CFBundleName</key>
 	<string>Selene</string>
+	<key>CFBundleDisplayName</key>
+	<string>Selene</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleExecutable</key>
-	<string>selene</string>
+	<string>Selene</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

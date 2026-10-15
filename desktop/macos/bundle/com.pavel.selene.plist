@@ -4,21 +4,18 @@
 <dict>
 	<key>Label</key>
 	<string>com.pavel.selene</string>
-	<key>ProgramArguments</key>
-	<array>
-		<string>__BIN__</string>
-	</array>
+	<key>BundleProgram</key>
+	<string>Contents/MacOS/Selene</string>
 	<key>RunAtLoad</key>
 	<true/>
 	<key>KeepAlive</key>
-	<true/>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+	</dict>
 	<key>ThrottleInterval</key>
 	<integer>10</integer>
 	<key>ProcessType</key>
 	<string>Standard</string>
-	<key>StandardOutPath</key>
-	<string>__LOG__</string>
-	<key>StandardErrorPath</key>
-	<string>__LOG__</string>
 </dict>
 </plist>
