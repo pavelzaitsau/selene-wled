@@ -14,7 +14,8 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
     // Utility QoS lets the scheduler keep frame work on the efficiency cores. A frame is 3,000
     // pixels of averaging, so the extra latency is well below one frame interval.
     private let frameQueue = DispatchQueue(label: "selene.frames", qos: .utility)
-    private let udp: NWConnection
+    /// Replaced on `frameQueue` after a failure.
+    private var udp: NWConnection!
     private var keepaliveTimer: DispatchSourceTimer?
 
     // Main thread.
@@ -54,19 +55,37 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
     private var paused = true
 
     override init() {
-        udp = NWConnection(host: NWEndpoint.Host(Config.wledHost),
-                           port: NWEndpoint.Port(rawValue: Config.wledUDPPort)!, using: .udp)
         super.init()
+        udp = makeUDP()
+    }
+
+    /// A failed `NWConnection` stays failed: a network drop, for example on sleep or a Wi-Fi
+    /// change, would otherwise silence the strip until a restart. The new connection follows
+    /// after `udpRetry`, so a network that stays down costs one attempt per interval.
+    private func makeUDP() -> NWConnection {
+        let conn = NWConnection(host: NWEndpoint.Host(Config.wledHost),
+                                port: NWEndpoint.Port(rawValue: Config.wledUDPPort)!, using: .udp)
         // A launchd process without Local Network permission fails its sends silently;
         // this state line is the only trace of it.
-        udp.stateUpdateHandler = { state in log("udp: \(state)", dedupe: true) }
-        udp.pathUpdateHandler = { [weak self] path in
+        conn.stateUpdateHandler = { [weak self, weak conn] state in
+            log("udp: \(state)", dedupe: true)
+            guard case .failed = state, let self, let conn else { return }
+            conn.cancel()
+            self.frameQueue.asyncAfter(deadline: .now() + Engine.udpRetry) {
+                guard self.udp === conn else { return }
+                self.udp = self.makeUDP()
+            }
+        }
+        conn.pathUpdateHandler = { [weak self] path in
             var ip: String?
             if case .hostPort(let host, _)? = path.localEndpoint { ip = "\(host)" }
             DispatchQueue.main.async { self?.localIP = ip }
         }
-        udp.start(queue: frameQueue)
+        conn.start(queue: frameQueue)
+        return conn
     }
+
+    private static let udpRetry: TimeInterval = 2
 
     func run() {
         if !CGPreflightScreenCaptureAccess() {
