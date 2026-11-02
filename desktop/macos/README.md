@@ -31,8 +31,11 @@ the capture size, the WLED state, the fps and the board status. The tooltip text
 | FPS | Frames captured per second over the last 2 s; 0 on a still picture |
 | Board | `live`, `lip` and power, Wi-Fi signal, uptime and WLED version from `/json/si` |
 | Stop | Releases the capture and turns WLED off; the moon turns hollow |
-| Start | Resumes the stream on the monitor |
+| Start | Resumes the stream on the monitor; unavailable while the monitor is disconnected |
 | Quit Selene | Turns WLED off and exits |
+
+Selene stops by itself when the monitor disconnects, and starts again when it returns. A Stop from
+the menu outlasts a reconnect: Selene stays stopped until Start.
 
 Selene reads `/json/si` every 10 s, and every 2 s while the menu is open. The board line says
 `live from this Mac` when `lip` matches the local address of the UDP stream.

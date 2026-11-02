@@ -45,6 +45,8 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     private func refresh() {
         let running = engine.enabled
         toggleItem.title = running ? "Stop" : "Start"
+        // Without the monitor there is nothing to start; Selene starts by itself when it returns.
+        toggleItem.isEnabled = engine.hasMonitor
         fpsItem.title = fpsText
         let board = boardLines
         boardItem.title = board.first ?? ""

@@ -32,7 +32,12 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
     /// The local address of the UDP connection, which WLED reports as `lip` while it streams from us.
     private(set) var localIP: String?
     private var captureSize: (width: Int, height: Int)?
-    private(set) var enabled = true
+    /// Set by Stop in the menu and cleared by Start. A monitor that returns leaves it set.
+    private var stoppedByUser = false
+    /// Streams when the monitor is connected and the user has not pressed Stop.
+    var enabled: Bool { !stoppedByUser && targetID != nil }
+    /// True while the monitor is connected. Main thread.
+    var hasMonitor: Bool { targetID != nil }
     private var fpsWindowStart = Date()
     private var framesInWindow = 0
     /// Frames per second over the last supervision tick; nil without a running capture.
@@ -110,8 +115,8 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
 
     /// Starts or stops streaming. Stopped, Selene releases the capture and turns WLED off.
     func setEnabled(_ on: Bool) {
-        guard on != enabled else { return }
-        enabled = on
+        guard on == stoppedByUser else { return }
+        stoppedByUser = !on
         log(on ? "streaming started from the menu" : "streaming stopped from the menu")
         lastWledPush = .distantPast
         tick()
@@ -120,7 +125,7 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
     /// Stops streaming, turns WLED off and calls `done` once the board answers or the request
     /// times out. Without the wait, WLED falls back to its own state, which Selene left on.
     func shutdown(then done: @escaping () -> Void) {
-        enabled = false
+        stoppedByUser = true
         stopStream()
         frameQueue.async { self.paused = true }
         releaseWLED(after: 0, completion: done)
@@ -139,7 +144,8 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
         }
         let wled: String
         if let error = wledError { wled = "unreachable (\(error))" } else { wled = wledConfirmed.map { $0 ? "on" : "off" } ?? "unknown" }
-        return ["Selene: \(enabled ? "running" : "stopped")",
+        let state = enabled ? "running" : stoppedByUser ? "stopped" : "stopped, no monitor"
+        return ["Selene: \(state)",
                 "Monitor \(Config.monitorName): \(monitor)",
                 "Capture: \(capture)",
                 "WLED \(Config.wledHost): \(wled)",
@@ -174,12 +180,12 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
         }
         // A stream on a sleeping monitor still costs GPU time for frames nobody sees.
         if asleep || !enabled { stopStream() }
-        let paused = !enabled || id == nil || asleep
+        let paused = !enabled || asleep
         frameQueue.async { self.paused = paused }
 
         // Only the computer with the monitor owns WLED power. Without it, a client releases WLED
         // once and stays silent, so it never darkens a strip another computer streams to.
-        if enabled && id != nil {
+        if enabled {
             if wledOn != true || Date().timeIntervalSince(lastWledPush) > Config.wledStateRefresh {
                 setWLED(on: true)
             }
