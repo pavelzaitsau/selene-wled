@@ -2,7 +2,7 @@ import AppKit
 import SeleneCore
 
 /// The menu bar item: a moon icon, the engine state in its tooltip, the current fps and board
-/// status, Start/Stop and Quit.
+/// status, the choice of the monitor with the strip, Start/Stop and Quit.
 final class StatusMenu: NSObject, NSMenuDelegate {
     private let engine: Engine
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -11,6 +11,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     // Wi-Fi, uptime and WLED version, indented under the board line; hidden without data.
     private let boardDetailItems = (0..<3).map { _ in NSMenuItem(title: "", action: nil, keyEquivalent: "") }
     private let toggleItem = NSMenuItem(title: "", action: #selector(toggle), keyEquivalent: "")
+    private let monitorMenu = NSMenu()
     private var openTimer: Timer?
     private let runningImage = StatusMenu.moon("moon.fill")
     private let stoppedImage = StatusMenu.moon("moon")
@@ -25,6 +26,10 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             detail.indentationLevel = 1
         }
         toggleItem.target = self
+        let monitorItem = NSMenuItem(title: "Monitor with Strip", action: nil, keyEquivalent: "")
+        monitorMenu.autoenablesItems = false
+        monitorMenu.delegate = self
+        monitorItem.submenu = monitorMenu
         let quit = NSMenuItem(title: "Quit Selene", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         let menu = NSMenu()
@@ -34,6 +39,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         menu.addItem(boardItem)
         boardDetailItems.forEach(menu.addItem)
         menu.addItem(.separator())
+        menu.addItem(monitorItem)
         menu.addItem(toggleItem)
         menu.addItem(.separator())
         menu.addItem(quit)
@@ -104,8 +110,30 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         return "\(seconds / 86400) d \(seconds % 86400 / 3600) h"
     }
 
+    /// Lists the connected displays and checks the monitor with the strip. A chosen monitor that
+    /// is not connected stays in the list, so the choice remains visible.
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        guard menu === monitorMenu else { return }
+        menu.removeAllItems()
+        var names = engine.connectedMonitors
+        let online = Set(names)
+        if !names.contains(where: engine.isStripMonitor) { names.append(engine.monitorName) }
+        for name in names {
+            let entry = NSMenuItem(title: online.contains(name) ? name : "\(name) (not connected)",
+                                   action: #selector(selectMonitor(_:)), keyEquivalent: "")
+            entry.target = self
+            entry.representedObject = name
+            // The row of a missing monitor is the current choice already. Without a pick, its
+            // title is the part-of-name default, and a click would save it as a whole name.
+            entry.isEnabled = online.contains(name)
+            entry.state = engine.isStripMonitor(name) ? .on : .off
+            menu.addItem(entry)
+        }
+    }
+
     // An open menu runs the event-tracking run loop mode, so the timer registers for `.common`.
     func menuWillOpen(_ menu: NSMenu) {
+        guard menu === item.menu else { return }
         engine.pollBoard()
         refresh()
         let t = Timer(timeInterval: 2, repeats: true) { [weak self] _ in self?.engine.pollBoard() }
@@ -114,12 +142,17 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     }
 
     func menuDidClose(_ menu: NSMenu) {
+        guard menu === item.menu else { return }
         openTimer?.invalidate()
         openTimer = nil
     }
 
     @objc private func toggle() {
         engine.setEnabled(!engine.enabled)
+    }
+
+    @objc private func selectMonitor(_ sender: NSMenuItem) {
+        if let name = sender.representedObject as? String { engine.selectMonitor(name) }
     }
 
     // The LaunchAgent restarts Selene only after an unsuccessful exit, so a clean exit stays down.

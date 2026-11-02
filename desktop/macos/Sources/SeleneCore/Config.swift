@@ -1,6 +1,7 @@
 import Foundation
 
 public enum Config {
+    /// The monitor with the strip until the user picks one in the menu.
     public static let monitorName = "LG ULTRAFINE"
     public static let wledHost = "192.168.1.35"
     public static let wledUDPPort: UInt16 = 21324

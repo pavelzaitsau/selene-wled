@@ -34,10 +34,15 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
     private var captureSize: (width: Int, height: Int)?
     /// Set by Stop in the menu and cleared by Start. A monitor that returns leaves it set.
     private var stoppedByUser = false
-    /// Streams when the monitor is connected and the user has not pressed Stop.
+    /// Streams when the monitor with the strip is connected and the user has not pressed Stop.
     var enabled: Bool { !stoppedByUser && targetID != nil }
-    /// True while the monitor is connected. Main thread.
+    /// True while the monitor with the strip is connected. Main thread.
     var hasMonitor: Bool { targetID != nil }
+    /// The display name picked in the menu; nil until the first pick.
+    private var chosenMonitor = UserDefaults.standard.string(forKey: Engine.monitorKey)
+    /// The name of the monitor with the strip, for the menu and the log.
+    var monitorName: String { chosenMonitor ?? Config.monitorName }
+    private static let monitorKey = "monitorName"
     private var fpsWindowStart = Date()
     private var framesInWindow = 0
     /// Frames per second over the last supervision tick; nil without a running capture.
@@ -108,7 +113,7 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
         t.setEventHandler { [weak self] in self?.keepalive() }
         t.resume()
         keepaliveTimer = t
-        log("selene started: monitor '\(Config.monitorName)', WLED \(Config.wledHost), \(Config.ledCount) LEDs, "
+        log("selene started: monitor '\(monitorName)', WLED \(Config.wledHost), \(Config.ledCount) LEDs, "
             + "\(Config.fps) fps, width \(Config.captureWidth), nominal \(Config.nominalResolution)")
         tick()
     }
@@ -120,6 +125,24 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
         log(on ? "streaming started from the menu" : "streaming stopped from the menu")
         lastWledPush = .distantPast
         tick()
+    }
+
+    /// Names of the connected displays, in the order macOS lists them. Main thread.
+    var connectedMonitors: [String] { NSScreen.screens.map(\.localizedName) }
+
+    /// Makes `name` the monitor with the strip on this Mac. Every other display is ignored.
+    func selectMonitor(_ name: String) {
+        guard name != chosenMonitor else { return }
+        chosenMonitor = name
+        UserDefaults.standard.set(name, forKey: Engine.monitorKey)
+        log("monitor with the strip: '\(name)'")
+        lastWledPush = .distantPast
+        tick()
+    }
+
+    /// True when `name` belongs to the monitor with the strip.
+    func isStripMonitor(_ name: String) -> Bool {
+        SeleneCore.isStripMonitor(name: name, chosen: chosenMonitor)
     }
 
     /// Stops streaming, turns WLED off and calls `done` once the board answers or the request
@@ -146,7 +169,7 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
         if let error = wledError { wled = "unreachable (\(error))" } else { wled = wledConfirmed.map { $0 ? "on" : "off" } ?? "unknown" }
         let state = enabled ? "running" : stoppedByUser ? "stopped" : "stopped, no monitor"
         return ["Selene: \(state)",
-                "Monitor \(Config.monitorName): \(monitor)",
+                "Monitor \(monitorName): \(monitor)",
                 "Capture: \(capture)",
                 "WLED \(Config.wledHost): \(wled)",
                 "\(Config.ledCount) LEDs"].joined(separator: "\n")
@@ -155,7 +178,7 @@ final class Engine: NSObject, SCStreamOutput, SCStreamDelegate {
     // MARK: Display supervision
 
     private func findTarget() -> CGDirectDisplayID? {
-        for s in NSScreen.screens where s.localizedName.localizedCaseInsensitiveContains(Config.monitorName) {
+        for s in NSScreen.screens where isStripMonitor(s.localizedName) {
             if let n = s.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber {
                 return CGDirectDisplayID(n.uint32Value)
             }

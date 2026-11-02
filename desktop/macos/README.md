@@ -30,12 +30,19 @@ the capture size, the WLED state, the fps and the board status. The tooltip text
 | --- | --- |
 | FPS | Frames captured per second over the last 2 s; 0 on a still picture |
 | Board | `live`, `lip` and power, Wi-Fi signal, uptime and WLED version from `/json/si` |
+| Monitor with Strip | Lists the connected displays; the checked one is captured, every other display is ignored |
 | Stop | Releases the capture and turns WLED off; the moon turns hollow |
 | Start | Resumes the stream on the monitor; unavailable while the monitor is disconnected |
 | Quit Selene | Turns WLED off and exits |
 
-Selene stops by itself when the monitor disconnects, and starts again when it returns. A Stop from
-the menu outlasts a reconnect: Selene stays stopped until Start.
+Selene stops by itself when the monitor with the strip disconnects, and starts again when it
+returns. A Stop from the menu outlasts a reconnect: Selene stays stopped until Start.
+
+Monitor with Strip keeps the choice per Mac, by display name, under the `monitorName` key of
+`defaults`. A chosen name matches the whole display name, in any case, without the number in
+brackets such as `(1)` that macOS appends to a display's name. Before the first choice, Selene
+takes the monitor whose name contains `LG ULTRAFINE`. A chosen monitor that is disconnected stays
+in the list as `not connected`, and that row takes no click.
 
 Selene reads `/json/si` every 10 s, and every 2 s while the menu is open. The board line says
 `live from this Mac` when `lip` matches the local address of the UDP stream.
@@ -109,8 +116,8 @@ launchctl kickstart -k gui/$(id -u)/com.pavel.selene
 | `nominalResolution` | `true` | Scale from the display's points instead of its pixels |
 | `smoothingTime` | 0.0935 | Time constant of the colour smoothing, in seconds |
 
-`defaults delete com.pavel.selene` restores every default. The first log line after a start
-states the values in use.
+`defaults delete com.pavel.selene` restores every default and forgets the monitor with the strip.
+The first log line after a start states the values in use.
 
 ## Measurements
 
@@ -133,7 +140,7 @@ and opendirectoryd stayed within noise in every variant. HyperHDR cost about 65%
 
 | Path | Contents |
 | --- | --- |
-| `Sources/SeleneCore/` | Configuration, zone layout, DRGB encoding; Foundation only |
+| `Sources/SeleneCore/` | Configuration, zone layout, DRGB encoding, monitor matching; Foundation only |
 | `Sources/selene/` | The daemon: capture, WLED power, menu bar item, logging |
 | `Sources/selene-check/` | Checks for `SeleneCore`, run by `tools/build.sh` |
 | `bundle/Info.plist` | App bundle metadata, including the Local Network prompt text |
@@ -151,7 +158,7 @@ plain executable: `swift run selene-check`.
 | Screen Recording permission is tied to the code signature | An ad-hoc signed rebuild loses the grant; the client logs the missing permission |
 | Login Items matches a plist in `~/Library/LaunchAgents` to its app only by a shared Team ID | The LaunchAgent lives in the bundle and registers through `SMAppService`; a self-signed certificate has no Team ID |
 | A LaunchAgent needs Local Network permission for UDP and HTTP to the LAN | Without it, every send fails silently; the client logs the network state |
-| `NSScreen.localizedName` of the monitor contains `LG ULTRAFINE` | [R2](../../docs/requirements.md#r2-target-monitor) holds on macOS |
+| `NSScreen.localizedName` of the LG contains `LG ULTRAFINE` | [R2](../../docs/requirements.md#r2-target-monitor) holds on macOS without a choice in the menu |
 | Each new `SCStream` wakes Control Center and opendirectoryd | [R8](../../docs/requirements.md#r8-one-capture-session): one stream per monitor connection |
 
 ## Troubleshooting

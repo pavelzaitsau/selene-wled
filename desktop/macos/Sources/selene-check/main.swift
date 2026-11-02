@@ -39,5 +39,17 @@ check(abs(a30 - 0.30) < 0.005, "factor at 30 fps \(a30)")
 check(abs(a15 - 0.51) < 0.005, "factor at 15 fps \(a15)")
 check(smoothingFactor(interval: 1, timeConstant: 0) == 1, "zero time constant turns smoothing off")
 
+// Monitor with the strip: the default matches by part, a pick by the whole name, and both
+// ignore the number macOS appends to a display's name.
+check(isStripMonitor(name: "LG ULTRAFINE", chosen: nil), "default matches the LG")
+check(isStripMonitor(name: "LG UltraFine Display", chosen: nil), "default matches by part, any case")
+check(!isStripMonitor(name: "Built-in Retina Display", chosen: nil), "default ignores other displays")
+check(isStripMonitor(name: "LG ULTRAFINE (1)", chosen: "LG ULTRAFINE"), "pick survives a number macOS adds")
+check(isStripMonitor(name: "LG ULTRAFINE", chosen: "LG ULTRAFINE (2)"), "pick saved with a number still matches")
+check(isStripMonitor(name: "built-in retina display", chosen: "Built-in Retina Display"), "pick ignores case")
+check(!isStripMonitor(name: "DELL U2720Q Pro", chosen: "DELL U2720Q"), "pick does not match by part")
+check(!isStripMonitor(name: "LG ULTRAFINE", chosen: "LG ULTRA"), "partial pick does not match")
+check(!isStripMonitor(name: "Studio (Left)", chosen: "Studio"), "only a number in brackets is dropped")
+
 if failures > 0 { print("\(failures) check(s) failed"); exit(1) }
 print("all checks passed")

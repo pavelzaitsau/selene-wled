@@ -18,8 +18,11 @@ These requirements bind every desktop client, on every OS. The wire format and t
 
 ### R2 Target monitor
 
-- Must: The client MUST capture only the monitor whose name contains `LG ULTRAFINE`.
-- Verified by: With a second display connected, the strip follows the LG only.
+- Must: The client MUST capture only the monitor with the strip. The user picks it in the client.
+  Until then, it is the monitor whose name contains `LG ULTRAFINE`.
+- Must: The client MUST ignore every other display.
+- Verified by: With a second display connected, the strip follows the chosen monitor only. Pick
+  the other display, and the strip follows it within 5 s.
 - Out of scope: More than one strip, more than one monitor.
 
 ## Power

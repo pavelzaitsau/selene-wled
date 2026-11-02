@@ -70,7 +70,8 @@ recovers from a board restart. The check also undoes a manual switch-off in the 
 10 s; Stop in the client menu is the way to darken the strip while the monitor is connected. A
 client without the monitor sends nothing after its release.
 
-The client finds the monitor by a name that contains `LG ULTRAFINE`. Display IDs change between
-ports and reboots, and the name does not.
+The client finds the monitor by its name. The user picks the monitor with the strip in the
+client; until then, the client takes the monitor whose name contains `LG ULTRAFINE`. Display IDs
+change between ports and reboots, and the name does not.
 
 `/json/state` and realtime UDP need no credentials.
