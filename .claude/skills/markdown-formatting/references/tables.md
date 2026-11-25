@@ -2,27 +2,27 @@
 
 Loaded from the `markdown-formatting` skill, whose body is `../SKILL.md`.
 
-A Markdown table is the element most likely to be written by hand and least likely to survive editing. Everything below is about keeping it correct through the second and third edit, not just the first.
+A Markdown table is the element most likely to be written by hand and least likely to survive editing. Everything below is about keeping it correct through the second and third edit, not only the first.
 
 ## The shape
 
 ```markdown
 | Column | Column | Column |
-|---|---|---|
+| --- | --- | --- |
 | cell | cell | cell |
 ```
 
 Three parts, in order, with no blank line between them:
 
 1. **Header row.** Every table has one. There is no syntax for a table without a header; leave the cells empty if the columns need no names, but keep the row.
-2. **Delimiter row.** At least three hyphens per column. Fewer parses as a paragraph in some renderers.
+2. **Delimiter row.** Three hyphens per column. Rule 4 in `../SKILL.md` says why.
 3. **Body rows.** Zero or more.
 
-A blank line before the table and after it. The one before is a hard requirement on GitHub: without it the table renders as a paragraph of pipes.
+A blank line before the table and after it. Rule 1 in `../SKILL.md` says why the one before matters.
 
 ## The rule that loses data
 
-**Every row carries the same number of cells as the header.** A row with fewer cells leaves holes; a row with more loses the extra cells without warning. Nothing in the rendered output says a column went missing, which is why this survives review.
+Rule 3 in `../SKILL.md` owns it: every row carries the same number of cells as the header. Nothing in the rendered output says a cell went missing, which is why a long row survives review.
 
 When a table renders wrong, count the pipes per line before looking at anything else.
 
@@ -32,7 +32,7 @@ The delimiter row sets it, with a colon on the side the text is pushed to:
 
 ```markdown
 | Left | Centre | Right |
-|:---|:---:|---:|
+| :--- | :---: | ---: |
 | a | b | c |
 ```
 
@@ -46,7 +46,7 @@ A literal `|` ends the cell unless it is escaped:
 
 ```markdown
 | Pattern | Meaning |
-|---|---|
+| --- | --- |
 | `a \| b` | either a or b |
 ```
 

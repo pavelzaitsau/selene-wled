@@ -1,6 +1,6 @@
 ---
 name: branch-names
-description: "Name a git branch to one scheme: a type prefix as a folder, the ticket id, and a short slug, lower case and under 40 characters. Use this skill whenever a branch is created, renamed or reviewed, and whenever you check a name against the convention. Trigger it even when the user only says 'start a branch', 'work on PROJ-12' or 'rename this branch'. Do NOT use it for commit messages, which belong to commit-messages, or for choosing a branching model."
+description: "Name a git branch to one scheme: a type prefix as a folder, the ticket id, and a short slug, lower case and 40 characters or fewer. Use this skill whenever a branch is created, renamed or reviewed, and whenever you check a name against the convention. Trigger it even when the user only says 'start a branch', 'work on PROJ-12' or 'rename this branch'. Do NOT use it for commit messages, which belong to commit-messages, or for choosing a branching model."
 license: MIT-0
 ---
 
@@ -53,13 +53,13 @@ Where the work has a ticket, its id follows the prefix: `fix/ki-62-retire-queue`
 - Take the words from the change, not from the ticket title. A title is written to be found in a tracker; a slug is written to be recognised in a list.
 - Drop every word the prefix already carries. `fix/fix-timeout` and `feat/add-export` say `fix` and `add` twice.
 - Nouns over verbs: `retire-queue`, not `retires-the-queue`.
-- Drop articles and prepositions. A slug is an identifier, not a sentence.
+- Drop articles and prepositions. Keep `off`, `out`, `up` and `down`, which flip the meaning: `scale-down-workers`, not `scale-workers`. A slug is an identifier, not a sentence.
 
 | Weak | Strong |
 | --- | --- |
 | `feat/ki-88-add-new-support-for-per-step-transports` | `feat/ki-88-per-step-transport` |
 | `fix/bugfix` | `fix/ki-62-retire-queue` |
-| `chore/updates` | `chore/bump-uv` |
+| `chore/updates` | `build/bump-uv` |
 | `feat/pavel-working-on-the-new-login-flow` | `feat/plat-9-login-flow` |
 
 ## 40 characters, 50 at the wall
@@ -97,11 +97,11 @@ git check-ref-format --branch "$name"
 `scripts/branch-name.sh` builds a name and checks one:
 
 ```console
-$ branch-name.sh PLAT-1184 "the retry keeps firing after a timeout"
-fix/plat-1184-retry-keeps-firing-timeout
+$ branch-name.sh PLAT-1184 "duplicate retry after a timeout"
+fix/plat-1184-duplicate-retry-timeout
 
-$ branch-name.sh --type docs - "write up the branch naming convention"
-docs/write-branch-naming-convention
+$ branch-name.sh --type docs - "branch naming convention"
+docs/branch-naming-convention
 
 $ branch-name.sh --check Feature/KI-62-Fix
 branch-name: upper case is not allowed: Feature/KI-62-Fix
@@ -109,15 +109,16 @@ branch-name: expected <type>/[<ticket>-]<slug>, lower case and hyphens
 branch-name: unknown type 'Feature', expected one of: feat fix perf refactor ...
 ```
 
-The ticket argument is `-` where there is no ticket. The generator infers the type from the description and exits 2 where it cannot, rather than defaulting to `chore` and hiding the choice. It refuses a name that already exists instead of appending a number. A duplicate name means the branch is already there, and you want to know that.
+The ticket argument is `-` where there is no ticket. The generator takes the type from the first word of the description, and from the object after a feature verb: `add tests` is `test`. It exits 2 where the first word names no type, rather than guess from a later noun or default to `chore` and hide the choice. It also exits 2 when the description leaves fewer than two words for the slug. It refuses a name that already exists instead of appending a number. A duplicate name means the branch is already there, and you want to know that.
 
 `--check` passes `main` and `master` unconditionally. Neither was named to this convention, and renaming either is not the answer.
 
-`scripts/pre-push` runs the check over every branch being pushed, and lets `main`, `master` and a delete through. It calls `branch-name.sh` from its own directory, so install both. Run this from the skill directory:
+`scripts/pre-push` runs the check over every branch being pushed, and lets `main`, `master` and a delete through. It calls `branch-name.sh` from its own directory, so install both. Run this from the root of the repository that gets the hook, with `<skill-dir>` the directory that holds this file:
 
 ```bash
-cp scripts/pre-push scripts/branch-name.sh .git/hooks/
-chmod +x .git/hooks/pre-push .git/hooks/branch-name.sh
+hooks=$(git rev-parse --git-path hooks)
+cp <skill-dir>/scripts/pre-push <skill-dir>/scripts/branch-name.sh "$hooks/"
+chmod +x "$hooks/pre-push" "$hooks/branch-name.sh"
 ```
 
 The hook refuses the push where `branch-name.sh` is not beside it or on `PATH`. A hook that cannot check is not a reason to publish an unchecked name.

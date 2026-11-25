@@ -14,10 +14,12 @@ rules its own documentation and commits are held to.
 ## These are copies
 
 The skills live in [copydesk](https://github.com/pavelzaitsau/copydesk), and that copy is the one
-to edit. The files here are refreshed from a local clone of it, `~/Projects/copydesk` by default:
+to edit. The script below refreshes the files here from a clone of it. By default the clone sits next
+to this repository, at `../copydesk`. Set `SKILLS_SOURCE` to use a clone elsewhere:
 
 ```bash
 tools/sync-skills.sh
+SKILLS_SOURCE=/path/to/copydesk tools/sync-skills.sh
 ```
 
 Editing a skill here instead puts the change one `rsync` away from being

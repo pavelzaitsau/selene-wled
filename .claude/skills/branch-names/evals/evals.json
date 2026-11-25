@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "i'm about to start on PLAT-1184, the retry logic keeps firing after the request has already timed out. what should i call the branch",
-      "expected_output": "One branch name: fix prefix as a folder, the ticket id lower case, a short slug, under 40 characters.",
+      "expected_output": "One branch name: fix prefix as a folder, the ticket id lower case, a short slug, 40 characters or fewer.",
       "assertions": [
         "The name starts with `fix/`",
         "The ticket id appears as `plat-1184`, lower case, immediately after the prefix",
@@ -26,7 +26,7 @@
         "`fix` in the slug is identified as repeating the prefix",
         "`claude/` is identified as an owner prefix rather than a type",
         "`wip` is identified as saying nothing a reader can act on",
-        "`chore/deps` is accepted, or only its missing ticket id is questioned"
+        "`chore/deps` is flagged twice: the type for a dependency change is `build`, and `deps` is a one-word abbreviated slug"
       ],
       "files": []
     },

@@ -99,7 +99,6 @@ The rule numbers behind each section of the skill, so a linter message can be tr
 | MD055 | table-pipe-style | Leading and trailing pipes used inconsistently |
 | MD056 | table-column-count | A row with more or fewer cells than the header |
 | MD058 | blanks-around-tables | A table glued to the text around it |
-| MD060 | table-column-style | Off. Column width is a preference, and the rule fires on every table |
 
 MD056 is the one that loses data silently. Treat it as an error, never a warning.
 
@@ -108,10 +107,11 @@ MD056 is the one that loses data silently. Treat it as an error, never a warning
 | Rule | Alias | Catches |
 | --- | --- | --- |
 | MD033 | no-inline-html | Raw HTML beyond the allowed set |
-| MD044 | proper-names | A product name capitalised the wrong way |
+| MD044 | proper-names | A product name capitalised the wrong way, once the config lists the names; with no list it never fires |
 
 ## Rules this skill turns off
 
 | Rule | Why |
 | --- | --- |
-| MD013 line-length | Prose here is unwrapped, one paragraph per line. A rule that fails on every line trains everyone to ignore the linter. |
+| MD013 line-length | `../SKILL.md`, section Line length |
+| MD060 table-column-style | `../SKILL.md`, section Tables |

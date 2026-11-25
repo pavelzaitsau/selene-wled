@@ -11,7 +11,7 @@
         "`basically` is deleted",
         "`will be triggered` becomes present tense",
         "The sentence is split so that no sentence carries two facts",
-        "No sentence exceeds 25 words",
+        "No sentence exceeds 20 words, the limit for procedures",
         "The orphan `this` is replaced by the noun it refers to",
         "The consequence of a timeout below the backoff is stated as a fact, not as `it is important that`"
       ],
@@ -26,7 +26,7 @@
         "The rejected alternative is named with the reason it was rejected",
         "The 400 KB item limit appears as a digit with its unit",
         "No section of the template is dropped as inapplicable",
-        "The decision appears before its justification"
+        "The title states the decision"
       ],
       "files": []
     },

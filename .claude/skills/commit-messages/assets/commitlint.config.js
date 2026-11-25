@@ -15,11 +15,8 @@ module.exports = {
     'header-max-length': [2, 'always', 72],
     'header-min-length': [2, 'always', 15],
 
-    // Off on purpose: a ticket id is uppercase and would fail every case rule.
-    // The commit-msg hook checks the word after the id instead.
+    // Off, with the next two: references/enforcement.md says why.
     'subject-case': [0],
-
-    // The body is never wrapped: one paragraph per line, however long.
     'body-max-line-length': [0],
     'footer-max-line-length': [0],
 

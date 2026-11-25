@@ -76,7 +76,7 @@ Fixed forms for the recurring documents - README, runbook, ADR, requirement, ope
    - No: `It is important that the caller does not reuse the token.`
    - Yes: `The caller MUST NOT reuse the token.`
 
-6. **No hedging.** An estimate is a number with a scope: `~200 ms at the 95th percentile`. The banned list lives in `references/vocabulary.md`.
+6. **No hedging.** An estimate is a number with a scope: `~200 ms at the 95th percentile`. The `Docs.Hedging` rule of the `docs-linter` skill holds the banned list.
 
 7. **No hidden verbs.**
    - No: `performs validation of`, `provides support for`, `makes use of`
@@ -115,8 +115,8 @@ The default is no comment. Code states what happens. A comment earns its place o
 
 ```text
 // The vendor returns 200 with an empty body on a throttled request.
-// Treating it as success loses the page silently, so an empty body
-// is retried. Removing this check reintroduces defect #4812.
+// Treating it as success loses the page silently, so the client
+// retries an empty body. Removing this check reintroduces defect #4812.
 ```
 
 Nothing in those three lines is visible in the code.
@@ -133,13 +133,13 @@ Nothing in those three lines is visible in the code.
 
 **A comment that contradicts the code is worse than no comment.** The reader trusts it; no tool checks it. When you change a line, read the comment above it in the same edit, then update or delete it there.
 
-**Doc comments on a public API** are written for a caller who cannot see the body. State what the member does in one sentence under 20 words. Document units, ranges, null handling and ownership for a parameter whose name does not already say them. State what an empty, absent or zero result means. Name the errors the caller must handle and the condition that raises each. State thread safety, blocking and side effects, or the caller assumes none. Never restate types; the signature carries them.
+**Doc comments on a public API** are written for a caller who cannot see the body. State what the member does in one sentence under 20 words. Document units, ranges, null handling and ownership for a parameter whose name does not already say them. State what an empty, absent or zero result means. Name the errors the caller has to handle and the condition that raises each. State thread safety, blocking and side effects, or the caller assumes none. Never restate types; the signature carries them.
 
 **TODO discipline.** `TODO(owner, ticket): <the action>, blocked on <condition>`. No condition means do it now or delete it.
 
 ## Commit bodies
 
-The subject is imperative, under 50 characters, with no trailing period. The body says why the change was made; the diff already says what changed. Machine-readable lines - metrics, benchmark numbers, issue references - are data, not prose, and keep their own format.
+The subject rules belong to the `commit-messages` skill. The body says why the change was made; the diff already says what changed. Machine-readable lines - metrics, benchmark numbers, issue references - are data, not prose, and keep their own format.
 
 ## Review checklist
 

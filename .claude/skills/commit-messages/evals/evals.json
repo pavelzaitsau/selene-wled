@@ -4,12 +4,12 @@
     {
       "id": 1,
       "prompt": "i fixed the thing where our retry logic kept firing after the request had already timed out, it was in src/http/retry.go, ticket is PLAT-1184. what should the commit message be",
-      "expected_output": "A single-line message: type fix, optional scope, ticket id right after the colon, imperative lower-case description, no body, no period.",
+      "expected_output": "A single-line message: type fix, no scope because the ticket id names the place, ticket id right after the colon, imperative lower-case description, no body, no period.",
       "assertions": [
-        "The subject starts with `fix` and a colon, optionally with a scope in parentheses",
+        "The subject starts with `fix:` and carries no scope, because the ticket id already names the place",
         "PLAT-1184 appears in the subject, immediately after the colon",
         "The description is lower case, imperative, and has no trailing period",
-        "The subject is 72 characters or fewer",
+        "The subject is 50 characters or fewer",
         "No body is produced, because the subject carries the change"
       ],
       "files": []

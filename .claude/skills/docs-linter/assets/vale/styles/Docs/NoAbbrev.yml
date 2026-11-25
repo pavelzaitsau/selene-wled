@@ -3,12 +3,15 @@ message: "Do not abbreviate in prose: write '%s', not '%s'."
 # An ad-hoc abbreviation costs more tokens than the word and breaks grep.
 level: error
 ignorecase: false
+# A word inside a hyphenated name is not an abbreviation in prose: `commit-msg`
+# is the name of a git hook. The lookarounds skip a word with a hyphen on
+# either side.
 swap:
-  cfg: config
-  pkg: package
-  msg: message
-  req: request
-  resp: response
-  idx: index
-  val: value
-  attr: attribute
+  '(?<!-)cfg(?!-)': config
+  '(?<!-)pkg(?!-)': package
+  '(?<!-)msg(?!-)': message
+  '(?<!-)req(?!-)': request
+  '(?<!-)resp(?!-)': response
+  '(?<!-)idx(?!-)': index
+  '(?<!-)val(?!-)': value
+  '(?<!-)attr(?!-)': attribute

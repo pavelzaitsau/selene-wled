@@ -1,10 +1,9 @@
 // markdownlint configuration for the markdown-formatting skill.
-// Run with: markdownlint-cli2 "**/*.md"
+// Run with scripts/lint-markdown.sh, which also loads the custom rule.
 {
   "default": true,
 
-  // Prose is unwrapped here: one paragraph per line. A line-length rule that
-  // fails on every line teaches everyone to ignore the linter.
+  // Off. The skill, section Line length, says why.
   "MD013": false,
 
   // One style each, so a repository does not drift into two.
@@ -34,8 +33,6 @@
   "MD056": true,
   "MD055": { "style": "leading_and_trailing" },
 
-  // Column width is not a defect. The rendered table is identical whether the
-  // source is padded or compact, and enforcing one produced more noise than
-  // every other rule here combined.
+  // Off. The skill, section Tables, says why column width is not a defect.
   "MD060": false
 }

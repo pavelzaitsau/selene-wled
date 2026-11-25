@@ -1,11 +1,15 @@
 extends: existence
 message: "Vague obligation: '%s'. Use MUST / MUST NOT / SHOULD / SHOULD NOT / MAY."
 level: warning
+# Each phrase opens a sentence as often as not, so its first letter takes either
+# case: a plain case-sensitive match let `It is important that` and `We should`
+# through. The rest stays case-sensitive, because `ignorecase` also flagged a
+# correct `We SHOULD`.
 ignorecase: false
 tokens:
-  - '\bneeds to be\b'
-  - '\bhas to be\b'
-  - '\bit is important that\b'
-  - '\bit is recommended\b'
-  - '\bshould probably\b'
-  - '\bwe should\b'
+  - '\b[Nn]eeds to be\b'
+  - '\b[Hh]as to be\b'
+  - '\b[Ii]t is important that\b'
+  - '\b[Ii]t is recommended\b'
+  - '\b[Ss]hould probably\b'
+  - '\b[Ww]e should\b'

@@ -20,8 +20,7 @@
       "expected_output": "Identification of the raw-versus-tokens trap, with the corrected rule.",
       "assertions": [
         "The answer states that a list under `raw:` is joined into one expression rather than OR-ed",
-        "The corrected rule uses `tokens:`",
-        "The answer does not suggest lookahead or lookbehind, which RE2 does not support"
+        "The corrected rule uses `tokens:`"
       ],
       "files": []
     },

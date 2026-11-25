@@ -6,7 +6,7 @@ Pick the template that matches the document. Do not invent a structure, and do n
 
 ## README
 
-The most-read and least-planned document in a repository. It answers four questions in this order, and stops.
+The most-read and least-planned document in a repository. It answers the reader's questions in this order, and stops.
 
 ```markdown
 # <name>
@@ -25,12 +25,12 @@ placeholders. If it takes more than 10 lines, the quickstart is wrong.>
 ## Configuration
 
 | Setting | Default | Effect |
-|---|---|---|
+| --- | --- | --- |
 
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
-|---|---|---|
+| --- | --- | --- |
 
 ## More
 
@@ -108,7 +108,7 @@ requirement or the milestone it serves.
 ## Options considered
 
 | # | Option | Cost | Why rejected / chosen |
-|---|---|---|---|
+| --- | --- | --- | --- |
 
 ## Decision
 
@@ -117,7 +117,7 @@ One sentence, bold.
 ## Consequences
 
 | Direction | Consequence |
-|---|---|
+| --- | --- |
 | Simpler | |
 | Harder | |
 | More expensive | |
@@ -152,7 +152,7 @@ A requirement with no verification line is a wish. Give it one or delete it.
 
 ```markdown
 | # | Question | Why it blocks | Owner | Needed by |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 ```
 
 An open question without an owner and a date is a note. Delete it or assign it.
@@ -161,4 +161,4 @@ An open question without an owner and a date is a note. Delete it or assign it.
 
 Text sources only, inline: Mermaid, DOT or an equivalent. An exported image does not diff, and a reviewer cannot comment on a line of it. A reader on a terminal, or on a screen reader, gets nothing from it.
 
-Precede every diagram with one sentence stating what the reader should conclude from it.
+Precede every diagram with one sentence stating the conclusion it supports.

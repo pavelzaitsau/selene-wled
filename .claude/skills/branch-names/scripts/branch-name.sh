@@ -41,8 +41,6 @@ is_type() {
   return 1
 }
 
-# ---------------------------------------------------------------- check
-
 check() {
   name="$1"
   fail=0
@@ -55,9 +53,9 @@ check() {
 
   case "$name" in
     # `[[:upper:]]` and not `[A-Z]`: a glob range walks the locale's collation
-    # order, and `en_US.UTF-8` orders letters `aAbB...zZ`, so almost every
-    # lower-case letter sorts inside `A` to `Z`. Under that locale the range
-    # rejected `build/compose-host-hephaestus` for upper case it does not have.
+    # order. `en_US.UTF-8` orders letters `aAbB...zZ`, so almost every lower-case
+    # letter sorts inside `A` to `Z`. Under that locale the range rejected
+    # `build/compose-host-hephaestus` for upper case it does not have.
     *[[:upper:]]*) say "upper case is not allowed: $name"; fail=1 ;;
   esac
 
@@ -113,8 +111,6 @@ check() {
   return "$fail"
 }
 
-# ------------------------------------------------------------- generate
-
 # The type lists are spelled out word for word, and matched word for word.
 # A stem glob reads `doc` inside `docker`, `test` inside `latest`, `hang`
 # inside `change` and `bug` inside `debug`, and each of those named the
@@ -130,13 +126,16 @@ readme changelog comment comments guide guides"
 T_TEST="test tests testing coverage flaky fixture fixtures"
 T_PERF="slow slower slowness latency speed faster memory cache caching throughput"
 T_REFACTOR="refactor refactors refactored refactoring rename renames renamed \
-extract extracts split splits simplify simplifies simplified cleanup clean tidy"
+extract extracts split splits simplify simplifies simplified cleanup clean tidy \
+move moves inline"
 T_BUILD="dependency dependencies bump bumps lockfile package packages packaging \
 docker dockerfile upgrade upgrades vendor"
 T_CI="pipeline pipelines workflow workflows ci hook hooks actions runner"
+# Verbs only. A noun such as `flag` names a thing, not a feature: `remove the
+# deprecated flag` is not one.
 T_FEAT="add adds added new support supports implement introduce allow allows \
-enable enables accept accepts expose exposes option options flag flags \
-command commands endpoint endpoints"
+show shows display export exports track search filter sort \
+enable enables accept accepts expose exposes"
 
 # 0 where any word of $2 appears in the list $1.
 has_word() {
@@ -148,23 +147,58 @@ has_word() {
   return 1
 }
 
+INFER_ORDER="revert fix docs test perf refactor build ci feat"
+
+list_for() {
+  case "$1" in
+    revert) echo "$T_REVERT" ;;   fix) echo "$T_FIX" ;;     docs) echo "$T_DOCS" ;;
+    test) echo "$T_TEST" ;;       perf) echo "$T_PERF" ;;   refactor) echo "$T_REFACTOR" ;;
+    build) echo "$T_BUILD" ;;     ci) echo "$T_CI" ;;       feat) echo "$T_FEAT" ;;
+  esac
+}
+
+# Exit 0 with the type, or 1 where the first word names none. Only the first
+# word decides. A noun later in the description used to decide instead, and
+# picked wrong without a word of warning: `show the error count` came out as
+# `fix`, which hides the choice as surely as a default would.
+# A feature verb names its object, though: `add tests` is `test`, and `add docs`
+# is `docs`. So after `add` and its kin, a docs, test, ci or build word in the
+# object decides. The object starts after any article and ends at the next
+# stopword: in `add retry to the upload pipeline`, `pipeline` is where the
+# feature goes, not what it is, and `add a test for X` is still `test`.
 infer_type() {
   ws=$(printf '%s' "$1" | tr -c 'a-z0-9' ' ')
-  has_word "$T_REVERT"   "$ws" && { echo revert;   return 0; }
-  has_word "$T_FIX"      "$ws" && { echo fix;      return 0; }
-  has_word "$T_DOCS"     "$ws" && { echo docs;     return 0; }
-  has_word "$T_TEST"     "$ws" && { echo test;     return 0; }
-  has_word "$T_PERF"     "$ws" && { echo perf;     return 0; }
-  has_word "$T_REFACTOR" "$ws" && { echo refactor; return 0; }
-  has_word "$T_BUILD"    "$ws" && { echo build;    return 0; }
-  has_word "$T_CI"       "$ws" && { echo ci;       return 0; }
-  has_word "$T_FEAT"     "$ws" && { echo feat;     return 0; }
+  lead=""
+  for w in $ws; do
+    if ! is_stopword "$w"; then lead=$w; break; fi
+  done
+  for t in $INFER_ORDER; do
+    if has_word "$(list_for "$t")" "$lead"; then
+      if [ "$t" = feat ]; then
+        past_lead=0
+        for w in $ws; do
+          if [ "$past_lead" -eq 0 ]; then
+            [ "$w" = "$lead" ] && past_lead=1
+            continue
+          fi
+          case "$w" in a|an|the) [ "$past_lead" -eq 1 ] && continue ;; esac
+          if is_stopword "$w"; then break; fi
+          past_lead=2
+          for o in docs test ci build; do
+            if has_word "$(list_for "$o")" "$w"; then echo "$o"; return 0; fi
+          done
+        done
+      fi
+      echo "$t"; return 0
+    fi
+  done
   return 1
 }
 
 # Words that carry no fact in a slug. `not` and `no` are deliberately absent:
-# dropping a negation inverts the name.
-STOPWORDS="a an and are as at be been by for from has have in into is it its of on or so that the this to was were will with our we already still just also very after before during when while then than about if up out off down again every"
+# dropping a negation inverts the name. So are `off`, `out`, `up` and `down`:
+# `turn on telemetry` and `turn off telemetry` would share one name.
+STOPWORDS="a an and are as at be been by for from has have in into is it its of on or so that the this to was were will with our we already still just also very after before during when while then than about if again every via per under without within across through"
 
 is_stopword() {
   for sw in $STOPWORDS; do
@@ -178,10 +212,11 @@ is_type_echo() {
   case "$2" in
     feat) case "$1" in add|adds|added|adding|new|introduce|implement) return 0 ;; esac ;;
     fix) case "$1" in fix|fixes|fixed|fixing|bugfix) return 0 ;; esac ;;
-    docs) case "$1" in document|documents|documenting|docs) return 0 ;; esac ;;
-    test) case "$1" in test|tests) return 0 ;; esac ;;
-    refactor) case "$1" in refactor|refactors|refactoring) return 0 ;; esac ;;
-    revert) case "$1" in revert|reverts) return 0 ;; esac ;;
+    docs) case "$1" in doc|docs|document|documents|documented|documenting|documentation) return 0 ;; esac ;;
+    test) case "$1" in test|tests|testing) return 0 ;; esac ;;
+    ci) case "$1" in ci) return 0 ;; esac ;;
+    refactor) case "$1" in refactor|refactors|refactored|refactoring) return 0 ;; esac ;;
+    revert) case "$1" in revert|reverts|reverted|reverting) return 0 ;; esac ;;
   esac
   return 1
 }
@@ -200,7 +235,7 @@ generate() {
   type="$type_opt"
   if [ -z "$type" ]; then
     type=$(infer_type "$desc") || {
-      say "no type inferred from the description; pass --type, one of: $TYPES"
+      say "the first word names no type; pass --type, one of: $TYPES"
       exit 2
     }
   fi
@@ -213,28 +248,45 @@ generate() {
        [ -n "$ticket" ] || { say "ticket '$ticket_arg' has no usable characters"; exit 2; } ;;
   esac
 
-  words=$(printf '%s' "$desc" | tr -c 'a-z0-9' ' ')
   slug=""
-  count=0
-  for w in $words; do
-    [ -n "$w" ] || continue
-    if is_stopword "$w"; then continue; fi
-    # A version like 0.9 splits into single digits that carry nothing.
-    case "$w" in [0-9]) continue ;; esac
-    if [ -z "$slug" ] && is_type_echo "$w" "$type"; then
-      continue
-    fi
-    slug="${slug:+$slug-}$w"
-    count=$((count + 1))
-    if [ "$count" -ge "$MAX_WORDS" ]; then break; fi
-  done
-  [ -n "$slug" ] || { say "the description left no words for a slug"; exit 2; }
+  if [ "$type" = "release" ]; then
+    # A release slug is the version, dots and all: `release/2026.3`. The word
+    # split below cuts `2026.3` into `2026` and `3`, then drops the `3`.
+    for w in $(printf '%s' "$desc" | tr -c 'a-z0-9.' ' '); do
+      case "$w" in
+        *[0-9]*) slug=${w%.}; slug=${slug#.}; break ;;
+      esac
+    done
+    [ -n "$slug" ] || { say "a release name needs a version, such as 2026.3"; exit 2; }
+  else
+    # A dotted version goes whole: split on the dots, `4.17.21` left `17-21`,
+    # which names no version at all.
+    words=$(printf '%s' "$desc" | sed -E 's/(^|[^a-z0-9.])v?[0-9]+(\.[0-9]+)+/\1 /g' | tr -c 'a-z0-9' ' ')
+    count=0
+    for w in $words; do
+      [ -n "$w" ] || continue
+      if is_stopword "$w"; then continue; fi
+      # A single digit, as in `retry 3 times`, carries nothing in a slug.
+      case "$w" in [0-9]) continue ;; esac
+      # A word the prefix already carries goes, wherever it stands. A leading
+      # `add` goes too, whichever type the inference took from its object:
+      # `add tests for X` is `test/...`.
+      if is_type_echo "$w" "$type"; then continue; fi
+      if [ -z "$slug" ] && is_type_echo "$w" feat; then continue; fi
+      slug="${slug:+$slug-}$w"
+      count=$((count + 1))
+      if [ "$count" -ge "$MAX_WORDS" ]; then break; fi
+    done
+    # The skill asks for 2 to 4 words. One word, as in `fix/cursor`, names a
+    # place and not a change.
+    [ "$count" -ge 2 ] || { say "the description left fewer than two words for a slug; name the change"; exit 2; }
+  fi
 
-  # Drop trailing words until the whole name fits, keeping at least one.
+  # Drop trailing words until the whole name fits, keeping at least two.
   name="$type/${ticket:+$ticket-}$slug"
   while [ "$(printf '%s' "$name" | wc -c | tr -d ' ')" -gt "$TARGET" ]; do
     case "$slug" in
-      *-*) slug=${slug%-*} ;;
+      *-*-*) slug=${slug%-*} ;;
       *) break ;;
     esac
     name="$type/${ticket:+$ticket-}$slug"
@@ -257,8 +309,6 @@ generate() {
   fi
   return 0
 }
-
-# ----------------------------------------------------------------- main
 
 [ $# -gt 0 ] || usage
 

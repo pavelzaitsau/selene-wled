@@ -2,19 +2,8 @@ extends: existence
 message: "Hedge: '%s'. State a number with a scope, or mark the gap explicitly."
 level: error
 ignorecase: true
+# `(?!-)` stops a hedge before a hyphen: `general-purpose` and `a few-shot
+# prompt` are terms, not hedges. `kind of` and `sort of` are left out:
+# `the kind of lock` names a category.
 tokens:
-  - probably
-  - arguably
-  - roughly speaking
-  - more or less
-  - it seems
-  - it appears that
-  - in general
-  - tends to
-  - kind of
-  - sort of
-  - a few
-  - several
-  - tens of
-  - a lot of
-  - should be fine
+  - '(?:probably|arguably|roughly speaking|more or less|it seems|it appears that|in general|tends to|a few|several|tens of|a lot of|should be fine)(?!-)'

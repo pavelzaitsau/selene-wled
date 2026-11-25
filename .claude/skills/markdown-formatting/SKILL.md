@@ -15,40 +15,42 @@ Wording is a separate concern. Sentence rules, structure and vocabulary live in 
 
 ## Blank lines decide almost everything
 
-Most broken Markdown is a missing blank line. A parser needs the blank line to know a block ended; without it, the next block is swallowed into the previous paragraph.
+Most Markdown that renders differently in two places is a missing blank line. GitHub lets a heading, a list, a fence or a table start on the line after a paragraph. Parsers that follow the original `Markdown.pl` do not let a list interrupt a paragraph, so there the list joins the paragraph as plain text. GitHub shows nothing wrong, so the defect survives review.
 
-Surround every block-level element with a blank line: headings, lists, fenced code, tables, blockquotes and horizontal rules.
+Surround every block-level element with a blank line: headings, lists, fenced code, tables, blockquotes and horizontal rules. The blank line costs nothing on GitHub, and the stricter parsers need it.
 
-Broken:
+Fragile:
 
-```markdown
+````markdown
 ## Setup
 Run the installer.
 - download it
 - run it
-~~~
+```bash
 npm install
-~~~
+```
 | Step | Time |
 | --- | --- |
-```
+````
 
-Correct:
+Portable:
 
-```markdown
+````markdown
 ## Setup
 
 Run the installer.
 
 - download it
 - run it
+
+```bash
+npm install
+```
 
 | Step | Time |
 | --- | --- |
 | download | 1 min |
-```
-
-The exceptions are the start and the end of the file, where there is nothing to separate from.
+````
 
 ## Headings
 
@@ -64,12 +66,15 @@ Pick one unordered marker and keep it for the whole document. `-` is the safest:
 
 Number an ordered list one of two ways, and never both inside one list. Write `1.` on every item where nobody cites the list by number. The source survives reordering, and a diff shows one line instead of a renumbered block. Write real numbers where the text says "rule 5" or "step 3". A reader who greps the source needs to find that number.
 
-Indent a nested list by two spaces, aligned under the text of its parent, not under the marker.
+Indent a nested list to the column where the text of its parent starts, not to the marker: two spaces under a `-` marker, three under `1.`. A child indented two spaces under `1.` leaves the list on GitHub, and `MD007` and `MD032` then flag it as a separate list.
 
 ```markdown
 - the parent item
   - the child, two spaces in
     - the grandchild, four
+
+1. the ordered parent
+   - the child, three spaces in
 ```
 
 A blank line before the list and after it. Without the trailing one, the paragraph that follows joins the last item.
@@ -88,7 +93,7 @@ Inline code takes single backticks and no padding spaces: `` `--flag` ``, not ``
 
 ## Links and images
 
-- `[text](url)`. The reversed form `(text)[url]` renders as literal characters in most parsers and as a link in a few, which is worse.
+- `[text](url)`. The reversed form `(text)[url]` renders as literal characters in most parsers and as a link in the rest, which is worse.
 - Link text describes the destination. `click here` and `this link` tell a screen reader nothing and read as noise in a list of links.
 - A bare URL in prose is wrapped in angle brackets: `<https://example.com>`. Without them some parsers autolink and some do not.
 - Every image carries alt text. `![Coverage badge](badge.svg)`, never `![](badge.svg)`.
@@ -96,20 +101,20 @@ Inline code takes single backticks and no padding spaces: `` `--flag` ``, not ``
 
 ## Emphasis
 
-`**bold**` and `_italic_`, one style each, consistently. Underscores inside a word break in several parsers, so `snake_case_name` in prose belongs in backticks.
+`**bold**` and `_italic_`, one style each, consistently. Underscores inside a word break in parsers that predate CommonMark, so `snake_case_name` in prose belongs in backticks.
 
 Emphasis is not a heading. A bold line standing alone where a heading belongs breaks the document tree, the table of contents and every anchor link.
 
 ## Tables
 
-Tables are where hand-written Markdown fails most often. The full rules, including alignment and the pipe-escaping trap, are in `references/tables.md`. The four that break rendering:
+Tables are where hand-written Markdown fails most often. The full rules, including alignment and the pipe-escaping trap, are in `references/tables.md`. Rules 2 and 3 break rendering on GitHub itself. Rules 1 and 4 are what GitHub's documentation asks for; GitHub's renderer forgives both, and other renderers need not.
 
-1. **A blank line before the table.** Without it the table is a paragraph.
+1. **A blank line before the table.** GitHub renders a table that starts on the line after a paragraph, so this is portability, not rendering there.
 2. **No blank line inside the table.** A blank line ends it, so every row below renders as literal pipes. The rows look right in the source and the content is silently outside the table.
-3. **Every row has the same number of cells.** A short row loses data; a long row is truncated. Count the pipes when a table looks wrong.
-4. **The delimiter row needs at least three hyphens per column**, with one space inside each pipe: `| --- | --- |`.
+3. **Every row has the same number of cells.** A short row gets empty cells; a long row loses its extra cells. Count the pipes when a table looks wrong.
+4. **Three hyphens per column in the delimiter row**, with one space inside each pipe: `| --- | --- |`. The GFM specification accepts one hyphen, and GitHub renders it. GitHub's own documentation asks for three, so three is the form every reader recognises.
 
-Rule 2 is the one no built-in check catches: `MD055` and `MD056` inspect a parsed table, and an orphaned row was never parsed as one. `assets/rules/table-row-outside-table.js` catches it, and `assets/.markdownlint-cli2.jsonc` is what loads it.
+Rule 2 is the one no built-in check catches. `assets/rules/table-row-outside-table.js` catches it and says why the built-in rules miss it, and `assets/.markdownlint-cli2.jsonc` loads it.
 
 ```markdown
 | Setting | Default | Effect |

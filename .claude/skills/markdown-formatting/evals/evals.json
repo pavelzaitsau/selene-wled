@@ -3,13 +3,13 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "this table renders as a wall of pipes on github and i can't see why:\n\nSome intro text\n| Flag | Meaning |\n|---|---|\n| -v | verbose |\n| -r | recurse | into subdirs |",
-      "expected_output": "Two defects found: no blank line before the table, and a row with three cells against a two-cell header.",
+      "prompt": "this table drops text on github and i can't see why:\n\nSome intro text\n| Flag | Meaning |\n|---|---|\n| -v | verbose |\n| -r | recurse | into subdirs |",
+      "expected_output": "One defect breaks rendering: the last row has three cells against a two-cell header, so `into subdirs` is dropped. The missing blank line before the table is a portability fix, not the cause on GitHub.",
       "assertions": [
-        "The missing blank line before the table is identified as the reason it renders as a paragraph",
-        "The three-cell row is identified against the two-cell header",
-        "The fix escapes the literal pipe or restructures the row",
-        "A corrected table is produced with a delimiter row of at least three hyphens per column"
+        "The three-cell row is identified as the cause, and `into subdirs` as the text that disappears",
+        "The fix escapes the literal pipe as `\\|` or restructures the row",
+        "A blank line is added before the table, without claiming that its absence breaks rendering on GitHub",
+        "A corrected table is produced with three hyphens per column in the delimiter row"
       ],
       "files": []
     },

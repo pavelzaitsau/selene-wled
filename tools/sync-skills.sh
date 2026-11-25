@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Refresh the vendored skills from the repository that owns them.
 #
-#     tools/sync-skills.sh
-#     SKILLS_SOURCE=~/src/copydesk tools/sync-skills.sh
+#     tools/sync-skills.sh                                    clone at ../copydesk
+#     SKILLS_SOURCE=/path/to/copydesk tools/sync-skills.sh   clone anywhere else
 #
 # The copies under .claude/skills are exactly that: copies. Edit a skill in its
 # own repository and run this, or the two drift and the repository loses the
@@ -10,8 +10,9 @@
 
 set -euo pipefail
 
-SOURCE="${SKILLS_SOURCE:-$HOME/Projects/copydesk}"
-TARGET="$(cd "$(dirname "$0")/../.claude/skills" && pwd)"
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+SOURCE="${SKILLS_SOURCE:-$(dirname "$REPO")/copydesk}"
+TARGET="$REPO/.claude/skills"
 SKILLS=(branch-names commit-messages docs-linter markdown-formatting technical-writing)
 
 if [ ! -d "$SOURCE" ]; then
